@@ -63,6 +63,7 @@ fun WebViewScreen(
             )
         }
     ) { padding ->
+        var loadedUrl by remember { mutableStateOf<String?>(null) }
         when {
             state.isLoading -> {
                 Box(
@@ -75,7 +76,6 @@ fun WebViewScreen(
                 }
             }
             else -> {
-                var loadedUrl by remember { mutableStateOf<String?>(null) }
                 AndroidView(
                     factory = { ctx ->
                         android.webkit.WebView(ctx).apply {
