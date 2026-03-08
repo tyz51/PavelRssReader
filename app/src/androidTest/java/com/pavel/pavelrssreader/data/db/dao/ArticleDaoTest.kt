@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -78,7 +79,9 @@ class ArticleDaoTest {
                 description = "D", publishedAt = 0L, fetchedAt = 0L)
         ))
         articleDao.setFavourite(1L, true)
-        val article = articleDao.getArticleById(1L)!!
-        assertTrue(article.isFavorite)
+        assertTrue(articleDao.getArticleById(1L)!!.isFavorite)
+
+        articleDao.setFavourite(1L, false)
+        assertFalse(articleDao.getArticleById(1L)!!.isFavorite)
     }
 }
