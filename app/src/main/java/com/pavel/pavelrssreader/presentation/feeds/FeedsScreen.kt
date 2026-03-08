@@ -63,9 +63,9 @@ fun FeedsScreen(viewModel: FeedsViewModel = hiltViewModel()) {
         )
     }
 
-    // Close dialog on successful add (feeds list grew)
-    LaunchedEffect(state.feeds.size) {
-        if (showDialog && !state.isLoading && state.addFeedError == null && urlInput.isNotBlank()) {
+    // Close dialog when ViewModel emits a successful-add event
+    LaunchedEffect(viewModel.feedAddedEvent) {
+        viewModel.feedAddedEvent.collect {
             showDialog = false
             urlInput = ""
         }

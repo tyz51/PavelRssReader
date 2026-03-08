@@ -8,8 +8,11 @@ import com.pavel.pavelrssreader.domain.usecase.AddFeedUseCase
 import com.pavel.pavelrssreader.domain.usecase.DeleteFeedUseCase
 import com.pavel.pavelrssreader.domain.usecase.GetFeedsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -33,6 +36,9 @@ class FeedsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(FeedsUiState())
     val uiState: StateFlow<FeedsUiState> = _uiState.asStateFlow()
 
+    private val _feedAddedEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val feedAddedEvent: SharedFlow<Unit> = _feedAddedEvent.asSharedFlow()
+
     init {
         getFeedsUseCase()
             .onEach { feeds -> _uiState.update { it.copy(feeds = feeds) } }
@@ -43,7 +49,10 @@ class FeedsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, addFeedError = null) }
             when (val result = addFeedUseCase(url)) {
-                is Result.Success -> _uiState.update { it.copy(isLoading = false) }
+                is Result.Success -> {
+                    _uiState.update { it.copy(isLoading = false) }
+                    _feedAddedEvent.tryEmit(Unit)
+                }
                 is Result.Error -> _uiState.update { it.copy(isLoading = false, addFeedError = result.message) }
             }
         }
