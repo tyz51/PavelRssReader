@@ -42,7 +42,6 @@ class RssRepositoryImpl @Inject constructor(
             val feed = Feed(id = id, url = url, title = feedTitle, addedAt = entity.addedAt)
             val articles = parsed.articles.map { it.copy(feedId = id) }
             articleDao.insertArticles(articles)
-            articleDao.deleteExpiredArticles(System.currentTimeMillis() - 86_400_000L)
             Result.Success(feed)
         } catch (e: Exception) {
             Result.Error("Failed to add feed: ${e.message}", e)
