@@ -30,7 +30,11 @@ class MappersTest {
             isRead = true, isFavorite = false
         )
         val domain = entity.toDomain()
-        assertEquals("g1", domain.guid)
-        assertEquals(true, domain.isRead)
+        assertEquals(
+            Article(id = 2L, feedId = 1L, guid = "g1", title = "T", link = "L",
+                description = "D", publishedAt = now, fetchedAt = now,
+                isRead = true, isFavorite = false),
+            domain
+        )
     }
 }
