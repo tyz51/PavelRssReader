@@ -8,15 +8,23 @@ import com.pavel.pavelrssreader.domain.usecase.MarkAsReadUseCase
 import com.pavel.pavelrssreader.domain.usecase.ToggleFavouriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class WebViewUiState(val article: Article? = null)
+data class WebViewUiState(
+    val article: Article? = null,
+    val isLoading: Boolean = false
+)
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class WebViewViewModel @Inject constructor(
     private val getArticlesUseCase: GetArticlesUseCase,
@@ -24,21 +32,29 @@ class WebViewViewModel @Inject constructor(
     private val toggleFavouriteUseCase: ToggleFavouriteUseCase
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(WebViewUiState())
-    val uiState: StateFlow<WebViewUiState> = _uiState.asStateFlow()
+    private val _articleId = MutableStateFlow<Long?>(null)
+
+    val uiState: StateFlow<WebViewUiState> = _articleId
+        .flatMapLatest { id ->
+            if (id == null) flowOf(WebViewUiState())
+            else getArticlesUseCase()
+                .map { articles ->
+                    val article = articles.find { it.id == id }
+                    WebViewUiState(article = article, isLoading = false)
+                }
+                .onStart { emit(WebViewUiState(isLoading = true)) }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, WebViewUiState(isLoading = true))
 
     fun loadArticle(articleId: Long) {
-        viewModelScope.launch {
-            val article = getArticlesUseCase()
-                .first { list -> list.any { it.id == articleId } }
-                .find { it.id == articleId }
-            markAsReadUseCase(articleId)
-            _uiState.update { it.copy(article = article) }
+        if (_articleId.value != articleId) {
+            _articleId.value = articleId
+            viewModelScope.launch { markAsReadUseCase(articleId) }
         }
     }
 
     fun toggleFavourite() {
-        val current = _uiState.value.article ?: return
+        val current = uiState.value.article ?: return
         viewModelScope.launch {
             toggleFavouriteUseCase(current.id, !current.isFavorite)
         }

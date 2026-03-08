@@ -1,13 +1,14 @@
 package com.pavel.pavelrssreader.presentation.webview
 
-import app.cash.turbine.test
 import com.pavel.pavelrssreader.domain.model.Article
 import com.pavel.pavelrssreader.domain.usecase.GetArticlesUseCase
 import com.pavel.pavelrssreader.domain.usecase.MarkAsReadUseCase
 import com.pavel.pavelrssreader.domain.usecase.ToggleFavouriteUseCase
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -20,6 +21,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
@@ -27,20 +29,20 @@ import org.junit.Test
 class WebViewViewModelTest {
 
     private val getArticlesUseCase = mockk<GetArticlesUseCase>()
-    private val markAsReadUseCase = mockk<MarkAsReadUseCase>(relaxed = true)
-    private val toggleFavouriteUseCase = mockk<ToggleFavouriteUseCase>(relaxed = true)
+    private val markAsReadUseCase = mockk<MarkAsReadUseCase>()
+    private val toggleFavouriteUseCase = mockk<ToggleFavouriteUseCase>()
 
     private val testDispatcher = StandardTestDispatcher()
 
     private val sampleArticle = Article(
         id = 1L,
         feedId = 1L,
-        guid = "guid1",
+        guid = "guid-1",
         title = "Test Article",
         link = "https://example.com/article",
-        description = "Article description",
-        publishedAt = System.currentTimeMillis(),
-        fetchedAt = System.currentTimeMillis(),
+        description = "Test description",
+        publishedAt = 1_000_000L,
+        fetchedAt = 1_000_000L,
         isRead = false,
         isFavorite = false
     )
@@ -58,31 +60,40 @@ class WebViewViewModelTest {
     @Test
     fun `loadArticle sets article in state and marks as read`() = runTest {
         every { getArticlesUseCase() } returns flowOf(listOf(sampleArticle))
+        coEvery { markAsReadUseCase(1L) } just Runs
 
-        val vm = WebViewViewModel(getArticlesUseCase, markAsReadUseCase, toggleFavouriteUseCase)
-        vm.loadArticle(1L)
+        val viewModel = WebViewViewModel(getArticlesUseCase, markAsReadUseCase, toggleFavouriteUseCase)
+        viewModel.loadArticle(1L)
         advanceUntilIdle()
 
-        vm.uiState.test {
-            val state = awaitItem()
-            assertNotNull(state.article)
-            assertEquals(sampleArticle, state.article)
-            cancelAndIgnoreRemainingEvents()
-        }
-
+        assertNotNull(viewModel.uiState.value.article)
+        assertEquals(sampleArticle, viewModel.uiState.value.article)
         coVerify { markAsReadUseCase(1L) }
     }
 
     @Test
-    fun `toggleFavourite calls use case with negated isFavorite`() = runTest {
-        val favoriteArticle = sampleArticle.copy(isFavorite = false)
-        every { getArticlesUseCase() } returns flowOf(listOf(favoriteArticle))
+    fun `loadArticle with unknown id leaves article null`() = runTest {
+        every { getArticlesUseCase() } returns flowOf(listOf(sampleArticle))
+        coEvery { markAsReadUseCase(999L) } just Runs
 
-        val vm = WebViewViewModel(getArticlesUseCase, markAsReadUseCase, toggleFavouriteUseCase)
-        vm.loadArticle(1L)
+        val viewModel = WebViewViewModel(getArticlesUseCase, markAsReadUseCase, toggleFavouriteUseCase)
+        viewModel.loadArticle(999L)
         advanceUntilIdle()
 
-        vm.toggleFavourite()
+        assertNull(viewModel.uiState.value.article)
+    }
+
+    @Test
+    fun `toggleFavourite calls use case with negated isFavorite`() = runTest {
+        val article = sampleArticle.copy(isFavorite = false)
+        every { getArticlesUseCase() } returns flowOf(listOf(article))
+        coEvery { markAsReadUseCase(1L) } just Runs
+        coEvery { toggleFavouriteUseCase(1L, true) } just Runs
+
+        val viewModel = WebViewViewModel(getArticlesUseCase, markAsReadUseCase, toggleFavouriteUseCase)
+        viewModel.loadArticle(1L)
+        advanceUntilIdle()
+        viewModel.toggleFavourite()
         advanceUntilIdle()
 
         coVerify { toggleFavouriteUseCase(1L, true) }
@@ -90,14 +101,15 @@ class WebViewViewModelTest {
 
     @Test
     fun `toggleFavourite with isFavorite true calls use case with false`() = runTest {
-        val favoriteArticle = sampleArticle.copy(isFavorite = true)
-        every { getArticlesUseCase() } returns flowOf(listOf(favoriteArticle))
+        val article = sampleArticle.copy(isFavorite = true)
+        every { getArticlesUseCase() } returns flowOf(listOf(article))
+        coEvery { markAsReadUseCase(1L) } just Runs
+        coEvery { toggleFavouriteUseCase(1L, false) } just Runs
 
-        val vm = WebViewViewModel(getArticlesUseCase, markAsReadUseCase, toggleFavouriteUseCase)
-        vm.loadArticle(1L)
+        val viewModel = WebViewViewModel(getArticlesUseCase, markAsReadUseCase, toggleFavouriteUseCase)
+        viewModel.loadArticle(1L)
         advanceUntilIdle()
-
-        vm.toggleFavourite()
+        viewModel.toggleFavourite()
         advanceUntilIdle()
 
         coVerify { toggleFavouriteUseCase(1L, false) }
