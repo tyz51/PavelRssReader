@@ -22,8 +22,10 @@ object DatabaseModule {
         Room.databaseBuilder(context, AppDatabase::class.java, "rss_reader.db").build()
 
     @Provides
+    @Singleton
     fun provideFeedDao(db: AppDatabase): FeedDao = db.feedDao()
 
     @Provides
+    @Singleton
     fun provideArticleDao(db: AppDatabase): ArticleDao = db.articleDao()
 }
