@@ -11,18 +11,22 @@ data class ParsedFeed(val feedTitle: String, val articles: List<ArticleEntity>)
 
 class RssParser {
 
-    private val rfc822Format = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH)
-    private val iso8601Format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.ENGLISH)
-
     fun parse(xml: String, feedId: Long): ParsedFeed {
         return try {
             val factory = XmlPullParserFactory.newInstance()
             factory.isNamespaceAware = false
             val parser = factory.newPullParser()
             parser.setInput(StringReader(xml))
-            when {
-                xml.contains("<rss") -> parseRss2(parser, feedId)
-                xml.contains("<feed") -> parseAtom(parser, feedId)
+
+            // Advance to first start tag to detect format
+            var eventType = parser.eventType
+            while (eventType != XmlPullParser.START_TAG && eventType != XmlPullParser.END_DOCUMENT) {
+                eventType = parser.next()
+            }
+
+            when (parser.name) {
+                "rss" -> parseRss2(parser, feedId)
+                "feed" -> parseAtom(parser, feedId)
                 else -> ParsedFeed("", emptyList())
             }
         } catch (e: Exception) {
@@ -104,11 +108,21 @@ class RssParser {
         return ParsedFeed(feedTitle, articles)
     }
 
-    private fun parseRfc822(date: String): Long =
-        runCatching { rfc822Format.parse(date.trim())?.time ?: System.currentTimeMillis() }
+    private fun parseRfc822(date: String): Long {
+        val fmt = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH)
+        return runCatching { fmt.parse(date.trim())?.time ?: System.currentTimeMillis() }
             .getOrDefault(System.currentTimeMillis())
+    }
 
-    private fun parseIso8601(date: String): Long =
-        runCatching { iso8601Format.parse(date.replace("Z", "+0000").trim())?.time ?: System.currentTimeMillis() }
-            .getOrDefault(System.currentTimeMillis())
+    private fun parseIso8601(date: String): Long {
+        val fmt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.ENGLISH)
+        val normalized = date.replace("Z", "+0000").trim()
+        // Try with milliseconds first, then without
+        return runCatching { fmt.parse(normalized)?.time }
+            .getOrNull()
+            ?: runCatching {
+                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.ENGLISH).parse(normalized)?.time
+            }.getOrNull()
+            ?: System.currentTimeMillis()
+    }
 }

@@ -73,6 +73,7 @@ class RssParserTest {
     @Test
     fun `parse malformed XML returns empty result without crashing`() {
         val result = parser.parse("<not-rss/>", feedId = 1L)
+        assertEquals("", result.feedTitle)
         assertEquals(0, result.articles.size)
     }
 }
