@@ -31,7 +31,7 @@ class FavouritesViewModelTest {
     private val sampleArticle = Article(
         id = 1L, feedId = 1L, guid = "g1", title = "Favourite Article",
         link = "https://example.com", description = "Desc",
-        publishedAt = System.currentTimeMillis(), fetchedAt = System.currentTimeMillis(),
+        publishedAt = 1_000_000L, fetchedAt = 1_000_000L,
         isFavorite = true
     )
 
@@ -61,12 +61,7 @@ class FavouritesViewModelTest {
         val vm = FavouritesViewModel(getFavouritesUseCase, toggleFavouriteUseCase)
         advanceUntilIdle()
 
-        vm.uiState.test {
-            val state = awaitItem()
-            assertEquals(1, state.favourites.size)
-            assertEquals(sampleArticle, state.favourites.first())
-            cancelAndIgnoreRemainingEvents()
-        }
+        assertEquals(listOf(sampleArticle), vm.uiState.value.favourites)
     }
 
     @Test

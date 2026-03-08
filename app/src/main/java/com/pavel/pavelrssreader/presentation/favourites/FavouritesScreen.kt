@@ -15,7 +15,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.pavel.pavelrssreader.R
 import com.pavel.pavelrssreader.presentation.articles.ArticleCard
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,7 +29,7 @@ fun FavouritesScreen(
     val state by viewModel.uiState.collectAsState()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Favourites") }) }
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.favourites_title)) }) }
     ) { padding ->
         if (state.favourites.isEmpty()) {
             Box(
@@ -36,10 +38,10 @@ fun FavouritesScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No favourite articles yet.")
+                Text(stringResource(R.string.favourites_empty))
             }
         } else {
-            LazyColumn(modifier = Modifier.padding(padding)) {
+            LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
                 items(state.favourites, key = { it.id }) { article ->
                     ArticleCard(
                         article = article,
