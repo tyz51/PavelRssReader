@@ -25,7 +25,8 @@ class MainActivity : ComponentActivity() {
                     bottomBar = { BottomNavBar(navController) }
                 ) { innerPadding ->
                     NavGraph(
-                        navController = navController
+                        navController = navController,
+                        modifier = Modifier.padding(innerPadding)
                     )
                 }
             }
