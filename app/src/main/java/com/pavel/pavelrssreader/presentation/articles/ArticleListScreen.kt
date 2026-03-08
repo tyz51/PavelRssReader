@@ -9,8 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
-import kotlinx.coroutines.launch
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticleListScreen(
@@ -19,14 +17,11 @@ fun ArticleListScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let {
-            scope.launch {
-                snackbarHostState.showSnackbar(it)
-                viewModel.clearError()
-            }
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
         }
     }
 
