@@ -79,6 +79,8 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.scalars)
     implementation(libs.okhttp)
+    implementation(libs.coil)
+    implementation(libs.jsoup)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)

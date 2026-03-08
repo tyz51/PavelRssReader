@@ -76,4 +76,33 @@ class RssParserTest {
         assertEquals("", result.feedTitle)
         assertEquals(0, result.articles.size)
     }
+
+    @Test
+    fun `parse RSS 2 prefers content encoded over description when both present`() {
+        val xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+              <channel>
+                <title>Test Feed</title>
+                <item>
+                  <title>Full Article</title>
+                  <link>https://example.com/full</link>
+                  <description>Short excerpt…</description>
+                  <content:encoded><![CDATA[<p>Full article HTML content.</p>]]></content:encoded>
+                  <guid>full-guid-1</guid>
+                  <pubDate>Mon, 06 Mar 2026 12:00:00 +0000</pubDate>
+                </item>
+              </channel>
+            </rss>
+        """.trimIndent()
+        val result = parser.parse(xml, feedId = 1L)
+        assertEquals(1, result.articles.size)
+        assertEquals("<p>Full article HTML content.</p>", result.articles[0].description)
+    }
+
+    @Test
+    fun `parse RSS 2 falls back to description when content encoded absent`() {
+        val result = parser.parse(rss2Xml, feedId = 1L)
+        assertEquals("Body of article one", result.articles[0].description)
+    }
 }

@@ -32,12 +32,13 @@ class RssRepositoryImpl @Inject constructor(
         feedDao.getAllFeeds().map { it.map { entity -> entity.toDomain() } }
 
     override suspend fun addFeed(url: String): Result<Feed> {
-        if (!isValidUrl(url)) return Result.Error("Invalid URL: $url")
+        val normalizedUrl = normalizeUrl(url)
+        if (!isValidUrl(normalizedUrl)) return Result.Error("Invalid URL: $normalizedUrl")
         return try {
-            val rawXml = apiService.fetchFeed(url)
+            val rawXml = apiService.fetchFeed(normalizedUrl)
             val parsed = parser.parse(rawXml, feedId = 0L)
-            val feedTitle = parsed.feedTitle.ifBlank { url }
-            val entity = FeedEntity(url = url, title = feedTitle, addedAt = System.currentTimeMillis())
+            val feedTitle = parsed.feedTitle.ifBlank { normalizedUrl }
+            val entity = FeedEntity(url = normalizedUrl, title = feedTitle, addedAt = System.currentTimeMillis())
             val id = feedDao.insertFeed(entity)
             val feed = Feed(id = id, url = url, title = feedTitle, addedAt = entity.addedAt)
             val articles = parsed.articles.map { it.copy(feedId = id) }
@@ -57,6 +58,17 @@ class RssRepositoryImpl @Inject constructor(
             val rawXml = apiService.fetchFeed(feed.url)
             val parsed = parser.parse(rawXml, feed.id)
             articleDao.insertArticles(parsed.articles)
+            parsed.articles.forEach { article ->
+                articleDao.updateContent(
+                    feedId = article.feedId,
+                    guid = article.guid,
+                    title = article.title,
+                    link = article.link,
+                    description = article.description,
+                    publishedAt = article.publishedAt,
+                    fetchedAt = article.fetchedAt
+                )
+            }
             articleDao.deleteExpiredArticles(System.currentTimeMillis() - 86_400_000L)
             Result.Success(Unit)
         } catch (e: Exception) {
@@ -79,6 +91,20 @@ class RssRepositoryImpl @Inject constructor(
 
     override suspend fun markAsRead(articleId: Long) {
         articleDao.markAsRead(articleId)
+    }
+
+    private fun normalizeUrl(url: String): String {
+        val trimmed = url.trim()
+        // Commas are never valid in hostnames — replace with dots to handle common input typos
+        // (e.g. "https://reform,news/feed" → "https://reform.news/feed")
+        // Only the authority segment (between "://" and the first "/") is affected.
+        val schemeEnd = trimmed.indexOf("://")
+        if (schemeEnd < 0) return trimmed
+        val authorityStart = schemeEnd + 3
+        val authorityEnd = trimmed.indexOf('/', authorityStart).takeIf { it >= 0 } ?: trimmed.length
+        return trimmed.substring(0, authorityStart) +
+            trimmed.substring(authorityStart, authorityEnd).replace(',', '.') +
+            trimmed.substring(authorityEnd)
     }
 
     private fun isValidUrl(url: String): Boolean = try {

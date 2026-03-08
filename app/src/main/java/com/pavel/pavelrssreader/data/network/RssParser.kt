@@ -38,16 +38,17 @@ class RssParser {
         var feedTitle = ""
         val articles = mutableListOf<ArticleEntity>()
         var inItem = false
-        var title = ""; var link = ""; var description = ""; var guid = ""; var pubDate = ""
+        var title = ""; var link = ""; var description = ""; var contentEncoded = ""; var guid = ""; var pubDate = ""
 
         var eventType = parser.eventType
         while (eventType != XmlPullParser.END_DOCUMENT) {
             when (eventType) {
                 XmlPullParser.START_TAG -> when (parser.name) {
-                    "item" -> { inItem = true; title = ""; link = ""; description = ""; guid = ""; pubDate = "" }
+                    "item" -> { inItem = true; title = ""; link = ""; description = ""; contentEncoded = ""; guid = ""; pubDate = "" }
                     "title" -> if (!inItem) feedTitle = parser.nextText() else title = parser.nextText()
                     "link" -> link = parser.nextText()
                     "description" -> description = parser.nextText()
+                    "content:encoded" -> contentEncoded = parser.nextText()
                     "guid" -> guid = parser.nextText()
                     "pubDate" -> pubDate = parser.nextText()
                 }
@@ -58,7 +59,7 @@ class RssParser {
                             guid = guid.ifBlank { "$feedId-$link" },
                             title = title,
                             link = link,
-                            description = description,
+                            description = contentEncoded.ifBlank { description },
                             publishedAt = parseRfc822(pubDate),
                             fetchedAt = System.currentTimeMillis()
                         )

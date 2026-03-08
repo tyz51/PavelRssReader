@@ -1,5 +1,6 @@
 package com.pavel.pavelrssreader.presentation.webview
 
+import com.pavel.pavelrssreader.data.network.ArticleContentFetcher
 import com.pavel.pavelrssreader.domain.model.Article
 import com.pavel.pavelrssreader.domain.usecase.GetArticlesUseCase
 import com.pavel.pavelrssreader.domain.usecase.MarkAsReadUseCase
@@ -31,6 +32,7 @@ class WebViewViewModelTest {
     private val getArticlesUseCase = mockk<GetArticlesUseCase>()
     private val markAsReadUseCase = mockk<MarkAsReadUseCase>()
     private val toggleFavouriteUseCase = mockk<ToggleFavouriteUseCase>()
+    private val articleContentFetcher = mockk<ArticleContentFetcher>()
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -57,12 +59,17 @@ class WebViewViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private fun createViewModel() = WebViewViewModel(
+        getArticlesUseCase, markAsReadUseCase, toggleFavouriteUseCase, articleContentFetcher
+    )
+
     @Test
     fun `loadArticle sets article in state and marks as read`() = runTest {
         every { getArticlesUseCase() } returns flowOf(listOf(sampleArticle))
         coEvery { markAsReadUseCase(1L) } just Runs
+        coEvery { articleContentFetcher.fetch(sampleArticle.link) } returns ""
 
-        val viewModel = WebViewViewModel(getArticlesUseCase, markAsReadUseCase, toggleFavouriteUseCase)
+        val viewModel = createViewModel()
         viewModel.loadArticle(1L)
         advanceUntilIdle()
 
@@ -75,8 +82,9 @@ class WebViewViewModelTest {
     fun `loadArticle with unknown id leaves article null`() = runTest {
         every { getArticlesUseCase() } returns flowOf(listOf(sampleArticle))
         coEvery { markAsReadUseCase(999L) } just Runs
+        coEvery { articleContentFetcher.fetch(sampleArticle.link) } returns ""
 
-        val viewModel = WebViewViewModel(getArticlesUseCase, markAsReadUseCase, toggleFavouriteUseCase)
+        val viewModel = createViewModel()
         viewModel.loadArticle(999L)
         advanceUntilIdle()
 
@@ -89,8 +97,9 @@ class WebViewViewModelTest {
         every { getArticlesUseCase() } returns flowOf(listOf(article))
         coEvery { markAsReadUseCase(1L) } just Runs
         coEvery { toggleFavouriteUseCase(1L, true) } just Runs
+        coEvery { articleContentFetcher.fetch(sampleArticle.link) } returns ""
 
-        val viewModel = WebViewViewModel(getArticlesUseCase, markAsReadUseCase, toggleFavouriteUseCase)
+        val viewModel = createViewModel()
         viewModel.loadArticle(1L)
         advanceUntilIdle()
         viewModel.toggleFavourite()
@@ -105,8 +114,9 @@ class WebViewViewModelTest {
         every { getArticlesUseCase() } returns flowOf(listOf(article))
         coEvery { markAsReadUseCase(1L) } just Runs
         coEvery { toggleFavouriteUseCase(1L, false) } just Runs
+        coEvery { articleContentFetcher.fetch(sampleArticle.link) } returns ""
 
-        val viewModel = WebViewViewModel(getArticlesUseCase, markAsReadUseCase, toggleFavouriteUseCase)
+        val viewModel = createViewModel()
         viewModel.loadArticle(1L)
         advanceUntilIdle()
         viewModel.toggleFavourite()

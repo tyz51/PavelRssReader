@@ -21,6 +21,18 @@ interface ArticleDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertArticles(articles: List<ArticleEntity>)
 
+    @Query("""
+        UPDATE articles
+        SET title = :title, link = :link, description = :description,
+            publishedAt = :publishedAt, fetchedAt = :fetchedAt
+        WHERE feedId = :feedId AND guid = :guid
+    """)
+    suspend fun updateContent(
+        feedId: Long, guid: String,
+        title: String, link: String, description: String,
+        publishedAt: Long, fetchedAt: Long
+    )
+
     @Query("UPDATE articles SET isFavorite = :isFavorite WHERE id = :articleId")
     suspend fun setFavourite(articleId: Long, isFavorite: Boolean)
 
