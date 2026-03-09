@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(export:*)",
+      "WebSearch",
+      "WebFetch(domain:plugins.gradle.org)",
+      "WebFetch(domain:youtrack.jetbrains.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:central.sonatype.com)",
+      "Bash(./gradlew :app:dependencies:*)",
+      "Bash(/usr/bin/java:*)",
+      "Bash(git:*)",
+      "Bash(./gradlew :app:testDebugUnitTest:*)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew :app:testDebugUnitTest:*)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew :app:compileDebugKotlin:*)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew :app:compileDebugAndroidTestKotlin:*)",
+      "Bash(/tmp/TestParser.kt:*)",
+      "Bash(chmod +x:*)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew :app:dependencies:*)",
+      "Bash(jar tf:*)",
+      "Bash(jar:*)",
+      "Bash(\"/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/jar\":*)",
+      "Bash(\"/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/jar\" tf:*)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew :app:assembleDebug:*)",
+      "WebFetch(domain:okkotlin.com)",
+      "Bash(curl:*)",
+      "Bash(python3:*)"
+    ]
+  }
+}
