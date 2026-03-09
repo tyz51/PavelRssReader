@@ -43,6 +43,12 @@ class ArticleContentFetcher @Inject constructor(
         if (best != null) {
             // Strip inline clutter (share buttons, donate banners, comments) before returning
             best.select(INLINE_NOISE_SELECTOR).remove()
+            // Remove duplicate images — sites often place the same lead image both as a
+            // hero figure and again inside the article body.
+            val seenSrcs = mutableSetOf<String>()
+            best.select("img[src]").forEach { img ->
+                if (!seenSrcs.add(img.attr("src"))) img.remove()
+            }
             return best.html()
         }
         return doc.body()?.html() ?: ""
