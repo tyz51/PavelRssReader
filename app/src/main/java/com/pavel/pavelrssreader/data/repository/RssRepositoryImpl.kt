@@ -13,6 +13,7 @@ import com.pavel.pavelrssreader.domain.model.Result
 import com.pavel.pavelrssreader.domain.repository.RssRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.net.UnknownHostException
 import javax.inject.Inject
 
 class RssRepositoryImpl @Inject constructor(
@@ -44,6 +45,9 @@ class RssRepositoryImpl @Inject constructor(
             val articles = parsed.articles.map { it.copy(feedId = id) }
             articleDao.insertArticles(articles)
             Result.Success(feed)
+        } catch (e: UnknownHostException) {
+            val host = e.message?.substringBefore(':')?.trim() ?: normalizedUrl
+            Result.Error("Cannot reach $host. Check the URL and your internet connection.", e)
         } catch (e: Exception) {
             Result.Error("Failed to add feed: ${e.message}", e)
         }
@@ -94,7 +98,9 @@ class RssRepositoryImpl @Inject constructor(
     }
 
     private fun normalizeUrl(url: String): String {
-        val trimmed = url.trim()
+        var trimmed = url.trim()
+        // Add https:// if the user omitted the scheme entirely (e.g. "pm.gc.ca/en/news.rss")
+        if (!trimmed.contains("://")) trimmed = "https://$trimmed"
         // Commas are never valid in hostnames — replace with dots to handle common input typos
         // (e.g. "https://reform,news/feed" → "https://reform.news/feed")
         // Only the authority segment (between "://" and the first "/") is affected.

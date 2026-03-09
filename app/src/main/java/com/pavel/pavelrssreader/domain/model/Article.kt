@@ -12,7 +12,8 @@ data class Article(
     val publishedAt: Long,
     val fetchedAt: Long = System.currentTimeMillis(),
     val isRead: Boolean = false,
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val imageUrl: String? = null
 ) {
     fun isExpired(now: Long = System.currentTimeMillis()): Boolean =
         !isFavorite && (now - fetchedAt) > TTL_MS

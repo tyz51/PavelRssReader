@@ -9,11 +9,11 @@ fun Feed.toEntity() = FeedEntity(id = id, url = url, title = title, addedAt = ad
 fun ArticleEntity.toDomain() = Article(
     id = id, feedId = feedId, guid = guid, title = title, link = link,
     description = description, publishedAt = publishedAt, fetchedAt = fetchedAt,
-    isRead = isRead, isFavorite = isFavorite
+    isRead = isRead, isFavorite = isFavorite, imageUrl = imageUrl
 )
 
 fun Article.toEntity() = ArticleEntity(
     id = id, feedId = feedId, guid = guid, title = title, link = link,
     description = description, publishedAt = publishedAt, fetchedAt = fetchedAt,
-    isRead = isRead, isFavorite = isFavorite
+    isRead = isRead, isFavorite = isFavorite, imageUrl = imageUrl
 )

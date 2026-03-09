@@ -43,11 +43,30 @@ class ArticleContentFetcher @Inject constructor(
         if (best != null) {
             // Strip inline clutter (share buttons, donate banners, comments) before returning
             best.select(INLINE_NOISE_SELECTOR).remove()
+            // Resolve lazy-loaded images: many sites ship <img src="placeholder" data-src="real-url">
+            // Html.fromHtml only reads `src`, so swap in the real URL before serialising.
+            best.select("img").forEach { img ->
+                val src = img.attr("src")
+                if (src.isBlank() || src.startsWith("data:")) {
+                    val real = LAZY_SRC_ATTRS.firstNotNullOfOrNull { attr ->
+                        img.attr(attr).takeIf { it.isNotBlank() }
+                    } ?: run {
+                        // Last resort: first URL from srcset
+                        img.attr("srcset").split(",").firstOrNull()
+                            ?.trim()?.split("\\s+".toRegex())?.firstOrNull()
+                            ?.takeIf { it.isNotBlank() }
+                    }
+                    if (real != null) img.attr("src", real)
+                }
+            }
+            // Drop any img that still has no usable src
+            best.select("img[src=''], img:not([src])").remove()
             // Remove duplicate images — sites often place the same lead image both as a
             // hero figure and again inside the article body.
             val seenSrcs = mutableSetOf<String>()
             best.select("img[src]").forEach { img ->
-                if (!seenSrcs.add(img.attr("src"))) img.remove()
+                val s = img.attr("src")
+                if (s.startsWith("data:") || !seenSrcs.add(s)) img.remove()
             }
             return best.html()
         }
@@ -77,6 +96,12 @@ class ArticleContentFetcher @Inject constructor(
             "[class*=comment], " +
             "[class*=fb-quote], [class*=fb-root], " +
             ".b-r"
+
+        // Common lazy-loading src attributes, in priority order
+        private val LAZY_SRC_ATTRS = listOf(
+            "data-src", "data-lazy-src", "data-original", "data-lazy",
+            "data-hi-res-src", "data-full-src", "data-image-src"
+        )
 
         private val ARTICLE_SELECTORS = listOf(
             "article",

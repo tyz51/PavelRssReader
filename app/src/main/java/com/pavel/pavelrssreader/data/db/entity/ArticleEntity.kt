@@ -25,5 +25,6 @@ data class ArticleEntity(
     val publishedAt: Long,
     val fetchedAt: Long,
     val isRead: Boolean = false,
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val imageUrl: String? = null
 )

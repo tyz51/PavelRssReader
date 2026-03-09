@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.retrofit.scalars)
     implementation(libs.okhttp)
     implementation(libs.coil)
+    implementation(libs.coil.compose)
     implementation(libs.jsoup)
     implementation(libs.datastore.preferences)
 

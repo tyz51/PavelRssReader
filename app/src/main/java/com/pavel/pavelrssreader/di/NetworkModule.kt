@@ -1,5 +1,6 @@
 package com.pavel.pavelrssreader.di
 
+import com.pavel.pavelrssreader.data.network.FallbackDns
 import com.pavel.pavelrssreader.data.network.RssApiService
 import com.pavel.pavelrssreader.data.network.RssParser
 import dagger.Module
@@ -20,6 +21,7 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(): OkHttpClient =
         OkHttpClient.Builder()
+            .dns(FallbackDns())
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .build()
