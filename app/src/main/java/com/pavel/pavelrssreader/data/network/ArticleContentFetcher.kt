@@ -30,22 +30,48 @@ class ArticleContentFetcher @Inject constructor(
 
     private fun extractBody(html: String, baseUrl: String): String {
         val doc = Jsoup.parse(html, baseUrl)
-        // Strip noise before extracting content
-        doc.select(
-            "script, style, nav, header, footer, aside, " +
-            "[class*=ad-], [id*=ad-], [class*=banner], [class*=cookie], " +
-            "[class*=popup], [class*=modal], [class*=sidebar], [class*=menu], " +
-            "[id*=sidebar], [id*=menu], [id*=nav]"
-        ).remove()
-        // Try selectors from most to least specific
-        for (selector in ARTICLE_SELECTORS) {
-            val el = doc.selectFirst(selector) ?: continue
-            if (el.text().length > 200) return el.html()
+        // Strip structural chrome: navigation, headers, ads, sidebars
+        doc.select(NOISE_SELECTOR).remove()
+        // Walk selectors in priority order (article is more precise than main).
+        // For each selector take the element with the most text, then return the first
+        // selector group that yields substantial content (>200 chars).
+        // This ensures a page with both <article> and <main> always prefers <article>.
+        val best = ARTICLE_SELECTORS
+            .asSequence()
+            .mapNotNull { selector -> doc.select(selector).maxByOrNull { it.text().length } }
+            .firstOrNull { it.text().length > 200 }
+        if (best != null) {
+            // Strip inline clutter (share buttons, donate banners, comments) before returning
+            best.select(INLINE_NOISE_SELECTOR).remove()
+            return best.html()
         }
         return doc.body()?.html() ?: ""
     }
 
     companion object {
+        private const val NOISE_SELECTOR =
+            "script, style, nav, header, footer, aside, " +
+            "[class*=ad-], [id*=ad-], [class*=banner], [class*=cookie], " +
+            "[class*=popup], [class*=modal], " +
+            "div[class*=sidebar], aside[class*=sidebar], section[class*=sidebar], " +
+            "div[class*=menu], nav[class*=menu], ul[class*=menu], " +
+            "[id*=sidebar], [id*=menu], [id*=nav]"
+
+        private const val INLINE_NOISE_SELECTOR =
+            // Duplicate headline — app already shows the title above the body
+            "h1, " +
+            // Author / byline blocks
+            "[class*=byline], [class*=author-info], [class*=authorDetails], " +
+            // Audio / text-to-speech players (SVG buttons that Html.fromHtml drops, leaving blank space)
+            "[class*=tts], [class*=textToSpeech], [class*=text-to-speech], [class*=audio-player], " +
+            // Deck / kicker subheadlines that repeat summary info
+            "[class*=deck], [class*=kicker], " +
+            // Social / share / comment clutter
+            "[class*=social-button], [class*=social-share], .sharedaddy, " +
+            "[class*=comment], " +
+            "[class*=fb-quote], [class*=fb-root], " +
+            ".b-r"
+
         private val ARTICLE_SELECTORS = listOf(
             "article",
             "[itemprop=articleBody]",

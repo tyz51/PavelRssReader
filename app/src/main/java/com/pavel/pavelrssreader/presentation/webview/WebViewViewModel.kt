@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pavel.pavelrssreader.data.network.ArticleContentFetcher
 import com.pavel.pavelrssreader.domain.model.Article
+import com.pavel.pavelrssreader.domain.repository.SettingsRepository
 import com.pavel.pavelrssreader.domain.usecase.GetArticlesUseCase
 import com.pavel.pavelrssreader.domain.usecase.MarkAsReadUseCase
 import com.pavel.pavelrssreader.domain.usecase.ToggleFavouriteUseCase
@@ -25,7 +26,9 @@ import javax.inject.Inject
 data class WebViewUiState(
     val article: Article? = null,
     val isLoading: Boolean = false,
-    val fullContent: String? = null
+    val fullContent: String? = null,
+    val titleFontSize: Float = SettingsRepository.DEFAULT_TITLE_FONT_SIZE,
+    val bodyFontSize: Float = SettingsRepository.DEFAULT_BODY_FONT_SIZE
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -34,7 +37,8 @@ class WebViewViewModel @Inject constructor(
     private val getArticlesUseCase: GetArticlesUseCase,
     private val markAsReadUseCase: MarkAsReadUseCase,
     private val toggleFavouriteUseCase: ToggleFavouriteUseCase,
-    private val articleContentFetcher: ArticleContentFetcher
+    private val articleContentFetcher: ArticleContentFetcher,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _articleId = MutableStateFlow<Long?>(null)
@@ -48,14 +52,22 @@ class WebViewViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val uiState: StateFlow<WebViewUiState> = combine(
-        _articleId,
-        _articleFlow,
-        _fullContent
-    ) { id, article, fullContent ->
+        combine(_articleId, _articleFlow, _fullContent) { id, article, content ->
+            Triple(id, article, content)
+        },
+        settingsRepository.titleFontSize,
+        settingsRepository.bodyFontSize
+    ) { (id, article, fullContent), titleSize, bodySize ->
         when {
-            id == null -> WebViewUiState()
-            article == null -> WebViewUiState(isLoading = true)
-            else -> WebViewUiState(article = article, isLoading = false, fullContent = fullContent)
+            id == null -> WebViewUiState(titleFontSize = titleSize, bodyFontSize = bodySize)
+            article == null -> WebViewUiState(isLoading = true, titleFontSize = titleSize, bodyFontSize = bodySize)
+            else -> WebViewUiState(
+                article = article,
+                isLoading = false,
+                fullContent = fullContent,
+                titleFontSize = titleSize,
+                bodyFontSize = bodySize
+            )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, WebViewUiState(isLoading = true))
 

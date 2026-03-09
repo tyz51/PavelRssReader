@@ -81,6 +81,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.coil)
     implementation(libs.jsoup)
+    implementation(libs.datastore.preferences)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)

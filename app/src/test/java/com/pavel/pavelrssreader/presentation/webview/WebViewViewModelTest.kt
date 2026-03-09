@@ -2,6 +2,7 @@ package com.pavel.pavelrssreader.presentation.webview
 
 import com.pavel.pavelrssreader.data.network.ArticleContentFetcher
 import com.pavel.pavelrssreader.domain.model.Article
+import com.pavel.pavelrssreader.domain.repository.SettingsRepository
 import com.pavel.pavelrssreader.domain.usecase.GetArticlesUseCase
 import com.pavel.pavelrssreader.domain.usecase.MarkAsReadUseCase
 import com.pavel.pavelrssreader.domain.usecase.ToggleFavouriteUseCase
@@ -33,6 +34,7 @@ class WebViewViewModelTest {
     private val markAsReadUseCase = mockk<MarkAsReadUseCase>()
     private val toggleFavouriteUseCase = mockk<ToggleFavouriteUseCase>()
     private val articleContentFetcher = mockk<ArticleContentFetcher>()
+    private val settingsRepository = mockk<SettingsRepository>()
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -52,6 +54,8 @@ class WebViewViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        every { settingsRepository.titleFontSize } returns flowOf(SettingsRepository.DEFAULT_TITLE_FONT_SIZE)
+        every { settingsRepository.bodyFontSize } returns flowOf(SettingsRepository.DEFAULT_BODY_FONT_SIZE)
     }
 
     @After
@@ -60,7 +64,7 @@ class WebViewViewModelTest {
     }
 
     private fun createViewModel() = WebViewViewModel(
-        getArticlesUseCase, markAsReadUseCase, toggleFavouriteUseCase, articleContentFetcher
+        getArticlesUseCase, markAsReadUseCase, toggleFavouriteUseCase, articleContentFetcher, settingsRepository
     )
 
     @Test

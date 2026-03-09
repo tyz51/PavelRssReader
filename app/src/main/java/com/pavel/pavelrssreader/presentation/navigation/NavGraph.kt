@@ -10,6 +10,7 @@ import androidx.navigation.navArgument
 import com.pavel.pavelrssreader.presentation.articles.ArticleListScreen
 import com.pavel.pavelrssreader.presentation.favourites.FavouritesScreen
 import com.pavel.pavelrssreader.presentation.feeds.FeedsScreen
+import com.pavel.pavelrssreader.presentation.settings.SettingsScreen
 import com.pavel.pavelrssreader.presentation.webview.WebViewScreen
 
 @Composable
@@ -27,6 +28,9 @@ fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
         }
         composable(NavRoutes.Feeds.route) {
             FeedsScreen()
+        }
+        composable(NavRoutes.Settings.route) {
+            SettingsScreen()
         }
         composable(
             route = NavRoutes.WebView.route,

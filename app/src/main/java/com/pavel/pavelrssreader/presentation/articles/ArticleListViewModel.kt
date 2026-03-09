@@ -35,7 +35,7 @@ class ArticleListViewModel @Inject constructor(
 
     init {
         getArticlesUseCase()
-            .onEach { articles -> _uiState.update { it.copy(articles = articles) } }
+            .onEach { articles -> _uiState.update { it.copy(articles = articles.filter { a -> !a.isRead }) } }
             .launchIn(viewModelScope)
     }
 

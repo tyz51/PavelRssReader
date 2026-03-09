@@ -31,20 +31,15 @@ class CoilImageGetter(
             .target(object : Target {
                 override fun onSuccess(result: Drawable) {
                     val tv = textViewRef.get() ?: return
-                    val availableWidth = tv.width
+                    val textWidth = (tv.width - tv.paddingLeft - tv.paddingRight)
                         .takeIf { it > 0 }
-                        ?: (tv.context.resources.displayMetrics.widthPixels - 64)
+                        ?: (tv.context.resources.displayMetrics.widthPixels - tv.paddingLeft - tv.paddingRight)
 
-                    val scaledWidth: Int
-                    val scaledHeight: Int
-                    if (result.intrinsicWidth > 0 && result.intrinsicHeight > 0) {
-                        scaledWidth = minOf(availableWidth, result.intrinsicWidth)
-                        scaledHeight = (scaledWidth * result.intrinsicHeight.toFloat() /
-                                result.intrinsicWidth).toInt()
-                    } else {
-                        scaledWidth = availableWidth
-                        scaledHeight = availableWidth / 2
-                    }
+                    val scaledWidth = textWidth
+                    val scaledHeight = if (result.intrinsicWidth > 0 && result.intrinsicHeight > 0)
+                        (textWidth * result.intrinsicHeight.toFloat() / result.intrinsicWidth).toInt()
+                    else
+                        textWidth / 2
 
                     result.setBounds(0, 0, scaledWidth, scaledHeight)
                     container.addLevel(1, 1, result)
