@@ -94,7 +94,7 @@ fun WebViewScreen(
                         factory = { ctx ->
                             WebView(ctx).apply {
                                 with(settings) {
-                                    javaScriptEnabled = false
+                                    javaScriptEnabled = true
                                     loadWithOverviewMode = true
                                     useWideViewPort = true
                                     setSupportZoom(false)
