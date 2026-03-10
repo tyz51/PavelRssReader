@@ -14,10 +14,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.RssFeed
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -52,6 +56,7 @@ fun FeedsScreen(viewModel: FeedsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var urlInput by remember { mutableStateOf("") }
+    var feedToDelete: Feed? by remember { mutableStateOf(null) }
 
     Scaffold(
         topBar = {
@@ -84,10 +89,41 @@ fun FeedsScreen(viewModel: FeedsViewModel = hiltViewModel()) {
                 .fillMaxSize()
         ) {
             items(state.feeds, key = { it.id }) { feed ->
-                FeedListItem(
-                    feed = feed,
-                    unreadCount = state.unreadCounts[feed.id] ?: 0
+                val dismissState = rememberSwipeToDismissBoxState(
+                    confirmValueChange = { it != SwipeToDismissBoxValue.StartToEnd }
                 )
+
+                LaunchedEffect(dismissState.currentValue) {
+                    if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                        feedToDelete = feed
+                        dismissState.reset()
+                    }
+                }
+
+                SwipeToDismissBox(
+                    state = dismissState,
+                    enableDismissFromStartToEnd = false,
+                    backgroundContent = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.errorContainer)
+                                .padding(end = 24.dp),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = "Delete feed",
+                                tint = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                ) {
+                    FeedListItem(
+                        feed = feed,
+                        unreadCount = state.unreadCounts[feed.id] ?: 0
+                    )
+                }
                 HorizontalDivider()
             }
         }
@@ -116,6 +152,17 @@ fun FeedsScreen(viewModel: FeedsViewModel = hiltViewModel()) {
             showDialog = false
             urlInput = ""
         }
+    }
+
+    feedToDelete?.let { feed ->
+        ConfirmDeleteDialog(
+            feedTitle = feed.title,
+            onConfirm = {
+                viewModel.deleteFeed(feed.id)
+                feedToDelete = null
+            },
+            onDismiss = { feedToDelete = null }
+        )
     }
 }
 
@@ -225,6 +272,27 @@ private fun AddFeedDialog(
                 onClick = onConfirm,
                 enabled = !isLoading && urlInput.isNotBlank()
             ) { Text("Add") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+}
+
+@Composable
+private fun ConfirmDeleteDialog(
+    feedTitle: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Remove \"$feedTitle\"?") },
+        text = { Text("All articles from this feed will also be removed.") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Remove", color = MaterialTheme.colorScheme.error)
+            }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
