@@ -1,5 +1,6 @@
 package com.pavel.pavelrssreader.domain.repository
 
+import com.pavel.pavelrssreader.data.db.dao.FeedUnreadCount
 import com.pavel.pavelrssreader.domain.model.Article
 import com.pavel.pavelrssreader.domain.model.Feed
 import com.pavel.pavelrssreader.domain.model.Result
@@ -15,4 +16,5 @@ interface RssRepository {
     suspend fun refreshAllFeeds(): Result<Unit>
     suspend fun setFavourite(articleId: Long, isFavorite: Boolean)
     suspend fun markAsRead(articleId: Long)
+    fun getUnreadCountsPerFeed(): Flow<List<FeedUnreadCount>>
 }

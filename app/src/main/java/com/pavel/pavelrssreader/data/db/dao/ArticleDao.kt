@@ -7,6 +7,8 @@ import androidx.room.Query
 import com.pavel.pavelrssreader.data.db.entity.ArticleEntity
 import kotlinx.coroutines.flow.Flow
 
+data class FeedUnreadCount(val feedId: Long, val count: Int)
+
 @Dao
 interface ArticleDao {
     @Query("SELECT * FROM articles ORDER BY publishedAt DESC")
@@ -41,4 +43,7 @@ interface ArticleDao {
 
     @Query("DELETE FROM articles WHERE isFavorite = 0 AND fetchedAt < :cutoffTime")
     suspend fun deleteExpiredArticles(cutoffTime: Long)
+
+    @Query("SELECT feedId, COUNT(*) as count FROM articles WHERE isRead = 0 GROUP BY feedId")
+    fun getUnreadCountsPerFeed(): Flow<List<FeedUnreadCount>>
 }

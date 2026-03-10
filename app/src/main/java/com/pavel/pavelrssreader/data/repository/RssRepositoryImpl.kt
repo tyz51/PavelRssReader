@@ -2,6 +2,7 @@ package com.pavel.pavelrssreader.data.repository
 
 import com.pavel.pavelrssreader.data.db.dao.ArticleDao
 import com.pavel.pavelrssreader.data.db.dao.FeedDao
+import com.pavel.pavelrssreader.data.db.dao.FeedUnreadCount
 import com.pavel.pavelrssreader.data.db.entity.FeedEntity
 import com.pavel.pavelrssreader.data.db.entity.toDomain
 import com.pavel.pavelrssreader.data.db.entity.toEntity
@@ -98,6 +99,9 @@ class RssRepositoryImpl @Inject constructor(
     override suspend fun markAsRead(articleId: Long) {
         articleDao.markAsRead(articleId)
     }
+
+    override fun getUnreadCountsPerFeed(): Flow<List<FeedUnreadCount>> =
+        articleDao.getUnreadCountsPerFeed()
 
     private fun normalizeUrl(url: String): String {
         var trimmed = url.trim()
