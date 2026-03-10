@@ -22,7 +22,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class WebViewUiState(
@@ -81,8 +83,9 @@ class WebViewViewModel @Inject constructor(
                 .collect { article ->
                     _contentBlocks.value = emptyList()
                     val fetched = articleContentFetcher.fetch(article.link)
-                    val html = fetched.ifBlank { article.description ?: "" }
-                    _contentBlocks.value = HtmlToBlocks.parse(html)
+                    val html = fetched.ifBlank { article.description }
+                    val blocks = withContext(Dispatchers.Default) { HtmlToBlocks.parse(html) }
+                    _contentBlocks.value = blocks
                 }
         }
     }
