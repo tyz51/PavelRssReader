@@ -52,7 +52,7 @@ fun BottomNavBar(navController: NavController) {
     ) {
         bottomNavItems.forEach { item ->
             val isSelected = currentRoute == item.route
-            val interactionSource = remember { MutableInteractionSource() }
+            val interactionSource = remember(item.route) { MutableInteractionSource() }
 
             Column(
                 modifier = Modifier
