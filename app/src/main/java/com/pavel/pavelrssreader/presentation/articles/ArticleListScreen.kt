@@ -10,7 +10,9 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.pavel.pavelrssreader.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticleListScreen(
@@ -30,7 +32,7 @@ fun ArticleListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("News") },
+                title = { Text(stringResource(R.string.news_title)) },
                 actions = {
                     IconButton(onClick = { /* search placeholder */ }) {
                         Icon(

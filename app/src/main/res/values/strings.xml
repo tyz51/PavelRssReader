@@ -2,4 +2,5 @@
     <string name="app_name">PavelRssReader</string>
     <string name="favourites_title">Favorites</string>
     <string name="favourites_empty">No favourite articles yet.</string>
+    <string name="news_title">News</string>
 </resources>
