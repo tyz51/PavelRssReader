@@ -1,6 +1,7 @@
 package com.pavel.pavelrssreader.presentation.webview
 
 import android.net.Uri
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -21,7 +23,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -31,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -39,6 +41,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.graphics.Color
@@ -66,8 +69,19 @@ fun WebViewScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {},
+            CenterAlignedTopAppBar(
+                title = {
+                    val article = state.article
+                    if (article != null) {
+                        Text(
+                            text = article.title,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -88,24 +102,39 @@ fun WebViewScreen(
             )
         }
     ) { padding ->
-        when {
-            state.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .pointerInput(Unit) {
+                    val threshold = 80.dp.toPx()
+                    var totalX = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { totalX = 0f },
+                        onHorizontalDrag = { _, dragAmount -> totalX += dragAmount },
+                        onDragEnd = { if (totalX < -threshold) viewModel.goToNextArticle() }
+                    )
                 }
-            }
-            else -> {
-                val article = state.article ?: return@Scaffold
-                ArticleContent(
-                    article = article,
-                    blocks = state.contentBlocks,
-                    titleFontSize = state.titleFontSize,
-                    bodyFontSize = state.bodyFontSize,
-                    modifier = Modifier.fillMaxSize().padding(padding)
-                )
+        ) {
+            when {
+                state.isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                else -> {
+                    val article = state.article ?: return@Box
+                    ArticleContent(
+                        article = article,
+                        blocks = state.contentBlocks,
+                        titleFontSize = state.titleFontSize,
+                        bodyFontSize = state.bodyFontSize,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
     }

@@ -48,10 +48,13 @@ class WebViewViewModel @Inject constructor(
     private val _articleId = MutableStateFlow<Long?>(null)
     private val _contentBlocks = MutableStateFlow<List<ContentBlock>>(emptyList())
 
+    private val _allArticles = getArticlesUseCase()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     private val _articleFlow = _articleId
         .flatMapLatest { id ->
             if (id == null) flowOf(null)
-            else getArticlesUseCase().map { articles -> articles.find { it.id == id } }
+            else _allArticles.map { articles -> articles.find { it.id == id } }
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -102,6 +105,15 @@ class WebViewViewModel @Inject constructor(
         val current = uiState.value.article ?: return
         viewModelScope.launch {
             toggleFavouriteUseCase(current.id, !current.isFavorite)
+        }
+    }
+
+    fun goToNextArticle() {
+        val currentId = _articleId.value ?: return
+        val articles = _allArticles.value
+        val idx = articles.indexOfFirst { it.id == currentId }
+        if (idx >= 0 && idx < articles.size - 1) {
+            loadArticle(articles[idx + 1].id)
         }
     }
 }
