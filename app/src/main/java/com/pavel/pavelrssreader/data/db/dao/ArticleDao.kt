@@ -5,9 +5,8 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.pavel.pavelrssreader.data.db.entity.ArticleEntity
+import com.pavel.pavelrssreader.domain.model.FeedUnreadCount
 import kotlinx.coroutines.flow.Flow
-
-data class FeedUnreadCount(val feedId: Long, val count: Int)
 
 @Dao
 interface ArticleDao {

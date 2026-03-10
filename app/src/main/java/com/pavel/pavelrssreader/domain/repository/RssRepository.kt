@@ -1,6 +1,6 @@
 package com.pavel.pavelrssreader.domain.repository
 
-import com.pavel.pavelrssreader.data.db.dao.FeedUnreadCount
+import com.pavel.pavelrssreader.domain.model.FeedUnreadCount
 import com.pavel.pavelrssreader.domain.model.Article
 import com.pavel.pavelrssreader.domain.model.Feed
 import com.pavel.pavelrssreader.domain.model.Result

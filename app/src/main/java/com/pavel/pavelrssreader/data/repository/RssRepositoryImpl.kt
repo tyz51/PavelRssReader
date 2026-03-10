@@ -2,7 +2,7 @@ package com.pavel.pavelrssreader.data.repository
 
 import com.pavel.pavelrssreader.data.db.dao.ArticleDao
 import com.pavel.pavelrssreader.data.db.dao.FeedDao
-import com.pavel.pavelrssreader.data.db.dao.FeedUnreadCount
+import com.pavel.pavelrssreader.domain.model.FeedUnreadCount
 import com.pavel.pavelrssreader.data.db.entity.FeedEntity
 import com.pavel.pavelrssreader.data.db.entity.toDomain
 import com.pavel.pavelrssreader.data.db.entity.toEntity
