@@ -3,7 +3,6 @@ package com.pavel.pavelrssreader.presentation.webview
 import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,6 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -174,8 +175,8 @@ private fun HeadingItem(block: ContentBlock.Heading) {
 @Composable
 private fun ParagraphItem(
     block: ContentBlock.Paragraph,
-    bodyFontSize: androidx.compose.ui.unit.TextUnit,
-    linkColor: androidx.compose.ui.graphics.Color
+    bodyFontSize: TextUnit,
+    linkColor: Color
 ) {
     Text(
         text = buildAnnotatedString {
@@ -203,7 +204,7 @@ private fun ParagraphItem(
 @Composable
 private fun ImageItem(
     block: ContentBlock.Image,
-    captionFontSize: androidx.compose.ui.unit.TextUnit
+    captionFontSize: TextUnit
 ) {
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
         AsyncImage(
@@ -226,10 +227,10 @@ private fun ImageItem(
 @Composable
 private fun QuoteItem(
     block: ContentBlock.Quote,
-    bodyFontSize: androidx.compose.ui.unit.TextUnit
+    bodyFontSize: TextUnit
 ) {
     val borderColor = MaterialTheme.colorScheme.primary
-    Row(
+    Box(
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .drawBehind {
