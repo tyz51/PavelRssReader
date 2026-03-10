@@ -1,7 +1,6 @@
 package com.pavel.pavelrssreader.presentation.webview
 
 import android.net.Uri
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -27,12 +26,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -47,6 +52,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -62,6 +69,42 @@ fun WebViewScreen(
     viewModel: WebViewViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val haptic = LocalHapticFeedback.current
+    val density = LocalDensity.current
+
+    // Vibrate when article changes (skip the very first load)
+    var seenArticleId by remember { mutableStateOf<Long?>(null) }
+    LaunchedEffect(state.article?.id) {
+        val id = state.article?.id ?: return@LaunchedEffect
+        if (seenArticleId != null && seenArticleId != id) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
+        seenArticleId = id
+    }
+
+    // Overscroll-down at bottom of article → go to next
+    val nestedScrollConnection = remember(density) {
+        val threshold = with(density) { 80.dp.toPx() }
+        object : NestedScrollConnection {
+            var accumulated = 0f
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                if (available.y < 0f) {
+                    accumulated += available.y
+                    if (accumulated < -threshold) {
+                        accumulated = 0f
+                        viewModel.goToNextArticle()
+                    }
+                } else {
+                    accumulated = 0f
+                }
+                return Offset.Zero
+            }
+        }
+    }
 
     LaunchedEffect(articleId) {
         viewModel.loadArticle(articleId)
@@ -106,15 +149,7 @@ fun WebViewScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .pointerInput(Unit) {
-                    val threshold = 80.dp.toPx()
-                    var totalX = 0f
-                    detectHorizontalDragGestures(
-                        onDragStart = { totalX = 0f },
-                        onHorizontalDrag = { _, dragAmount -> totalX += dragAmount },
-                        onDragEnd = { if (totalX < -threshold) viewModel.goToNextArticle() }
-                    )
-                }
+                .nestedScroll(nestedScrollConnection)
         ) {
             when {
                 state.isLoading -> {
