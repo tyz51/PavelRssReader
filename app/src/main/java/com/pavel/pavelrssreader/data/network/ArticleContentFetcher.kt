@@ -4,6 +4,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.json.JSONArray
+import org.json.JSONObject
 import org.jsoup.Jsoup
 import javax.inject.Inject
 
@@ -70,7 +72,90 @@ class ArticleContentFetcher @Inject constructor(
             }
             return best.html()
         }
+        // Fallback for JS-rendered pages (e.g. React apps like CBC) that store article
+        // content inside window.__INITIAL_STATE__ rather than server-rendered HTML.
+        // Use raw html (not doc) because NOISE_SELECTOR removes <script> elements from doc.
+        val stateHtml = extractFromInitialState(html)
+        if (stateHtml.length > 200) return stateHtml
         return doc.body()?.html() ?: ""
+    }
+
+    /**
+     * Extracts article body from window.__INITIAL_STATE__ JSON embedded in a <script> tag.
+     * CBC and similar React/Next.js sites store article paragraphs as JSON objects with
+     * {"type":"html","tag":"p","content":[{"type":"text","content":"text here"}]}.
+     * Uses the raw HTML string because Jsoup's NOISE_SELECTOR removes <script> nodes.
+     */
+    private fun extractFromInitialState(html: String): String {
+        val markerIdx = html.indexOf("window.__INITIAL_STATE__")
+        if (markerIdx == -1) return ""
+        val objStart = html.indexOf('{', markerIdx)
+        if (objStart == -1) return ""
+        val jsonStr = extractJsonObject(html, objStart)
+        if (jsonStr.isEmpty()) return ""
+        return try {
+            val json = JSONObject(jsonStr)
+            val body = json.getJSONObject("detail")
+                .getJSONObject("content")
+                .getJSONArray("body")
+            buildArticleHtmlFromBodyArray(body)
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
+    /** Extracts a complete JSON object starting at [start] using brace counting. */
+    private fun extractJsonObject(text: String, start: Int): String {
+        var depth = 0
+        var inString = false
+        var escape = false
+        val sb = StringBuilder()
+        for (i in start until text.length) {
+            val c = text[i]
+            sb.append(c)
+            when {
+                escape -> escape = false
+                c == '\\' && inString -> escape = true
+                c == '"' -> inString = !inString
+                !inString && c == '{' -> depth++
+                !inString && c == '}' -> {
+                    depth--
+                    if (depth == 0) return sb.toString()
+                }
+            }
+        }
+        return ""
+    }
+
+    private fun buildArticleHtmlFromBodyArray(body: JSONArray): String {
+        val sb = StringBuilder()
+        for (i in 0 until body.length()) {
+            val item = body.optJSONObject(i) ?: continue
+            if (item.optString("type") != "html") continue
+            val tag = item.optString("tag", "").lowercase()
+            val text = extractNodeText(item)
+            if (text.isBlank()) continue
+            when (tag) {
+                "p" -> sb.append("<p>").append(text).append("</p>\n")
+                "h2" -> sb.append("<h2>").append(text).append("</h2>\n")
+                "h3", "h4", "h5", "h6" -> sb.append("<h3>").append(text).append("</h3>\n")
+                "blockquote" -> sb.append("<blockquote>").append(text).append("</blockquote>\n")
+            }
+        }
+        return sb.toString()
+    }
+
+    private fun extractNodeText(node: JSONObject): String {
+        val content = node.optJSONArray("content") ?: return ""
+        val sb = StringBuilder()
+        for (i in 0 until content.length()) {
+            val child = content.optJSONObject(i) ?: continue
+            when (child.optString("type")) {
+                "text" -> sb.append(child.optString("content"))
+                "html" -> sb.append(extractNodeText(child))
+            }
+        }
+        return sb.toString()
     }
 
     companion object {
