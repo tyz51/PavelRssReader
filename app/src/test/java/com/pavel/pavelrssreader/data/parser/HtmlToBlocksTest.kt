@@ -8,6 +8,11 @@ import org.junit.Test
 class HtmlToBlocksTest {
 
     @Test
+    fun `heading h1 parsed`() {
+        assertEquals(listOf(ContentBlock.Heading(1, "Title")), HtmlToBlocks.parse("<h1>Title</h1>"))
+    }
+
+    @Test
     fun `heading h2 parsed`() {
         assertEquals(listOf(ContentBlock.Heading(2, "Hello")), HtmlToBlocks.parse("<h2>Hello</h2>"))
     }

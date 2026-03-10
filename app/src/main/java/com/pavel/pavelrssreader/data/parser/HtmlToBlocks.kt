@@ -12,26 +12,13 @@ object HtmlToBlocks {
     fun parse(html: String): List<ContentBlock> =
         Jsoup.parseBodyFragment(html).body().children()
             .flatMap { parseElement(it) }
-            .filter { isNonEmpty(it) }
-
-    private fun isNonEmpty(block: ContentBlock): Boolean = when (block) {
-        is ContentBlock.Heading -> block.text.isNotBlank()
-        is ContentBlock.Paragraph -> block.spans.any { span ->
-            when (span) {
-                is TextSpan.Plain -> span.text.isNotBlank()
-                is TextSpan.Bold -> span.text.isNotBlank()
-                is TextSpan.Italic -> span.text.isNotBlank()
-                is TextSpan.Link -> span.text.isNotBlank()
-            }
-        }
-        is ContentBlock.Image -> block.url.isNotBlank()
-        is ContentBlock.Quote -> block.text.isNotBlank()
-    }
 
     private fun parseElement(element: Element): List<ContentBlock> =
         when (element.tagName().lowercase()) {
-            "h2", "h3", "h4", "h5", "h6" ->
-                listOf(ContentBlock.Heading(element.tagName()[1].digitToInt(), element.text()))
+            "h1", "h2", "h3", "h4", "h5", "h6" -> {
+                val text = element.text()
+                if (text.isBlank()) emptyList() else listOf(ContentBlock.Heading(element.tagName()[1].digitToInt(), text))
+            }
             "p" -> {
                 val spans = parseSpans(element)
                 if (spans.isEmpty()) emptyList() else listOf(ContentBlock.Paragraph(spans))
