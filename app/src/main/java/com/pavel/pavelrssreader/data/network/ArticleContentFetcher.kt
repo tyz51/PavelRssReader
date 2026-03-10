@@ -76,7 +76,10 @@ class ArticleContentFetcher @Inject constructor(
     companion object {
         private const val NOISE_SELECTOR =
             "script, style, nav, header, footer, aside, " +
-            "[class*=ad-], [id*=ad-], [class*=banner], [class*=cookie], " +
+            // Match ad- only at the START of a class word (^=) or after a space (*= " ad-")
+            // to avoid false positives like "wallpaper-ad-wrap" that contain ad- mid-word
+            "[class^=ad-], [class*= ad-], [id^=ad-], " +
+            "[class*=banner], [class*=cookie], " +
             "[class*=popup], [class*=modal], " +
             "div[class*=sidebar], aside[class*=sidebar], section[class*=sidebar], " +
             "div[class*=menu], nav[class*=menu], ul[class*=menu], " +
@@ -116,6 +119,13 @@ class ArticleContentFetcher @Inject constructor(
             "[class*=post-content]",
             "[class*=entry-content]",
             "[class*=story-body]",
+            "[class*=story-content]",
+            "[class*=detail-content]",
+            "[id*=articleBody]",
+            "[id*=article-body]",
+            "[id*=story-body]",
+            "[id*=storyContent]",
+            "[id*=detailContent]",
             "main"
         )
     }
