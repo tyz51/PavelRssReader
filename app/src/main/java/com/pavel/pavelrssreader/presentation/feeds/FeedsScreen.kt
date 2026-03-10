@@ -39,8 +39,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -86,8 +86,7 @@ fun FeedsScreen(viewModel: FeedsViewModel = hiltViewModel()) {
             items(state.feeds, key = { it.id }) { feed ->
                 FeedListItem(
                     feed = feed,
-                    unreadCount = state.unreadCounts[feed.id] ?: 0,
-                    onDelete = { viewModel.deleteFeed(feed.id) }
+                    unreadCount = state.unreadCounts[feed.id] ?: 0
                 )
                 HorizontalDivider()
             }
@@ -123,8 +122,7 @@ fun FeedsScreen(viewModel: FeedsViewModel = hiltViewModel()) {
 @Composable
 private fun FeedListItem(
     feed: Feed,
-    unreadCount: Int,
-    onDelete: () -> Unit
+    unreadCount: Int
 ) {
     Row(
         modifier = Modifier
@@ -159,7 +157,8 @@ private fun FeedListItem(
                 text = feed.url,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
         if (unreadCount > 0) {
@@ -176,7 +175,7 @@ private fun FeedListItem(
                         fontWeight = FontWeight.Bold,
                         fontSize = 11.sp
                     ),
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }
