@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,19 +27,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
@@ -52,8 +48,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -70,41 +64,6 @@ fun WebViewScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val haptic = LocalHapticFeedback.current
-    val density = LocalDensity.current
-
-    // Vibrate when article changes (skip the very first load)
-    var seenArticleId by remember { mutableStateOf<Long?>(null) }
-    LaunchedEffect(state.article?.id) {
-        val id = state.article?.id ?: return@LaunchedEffect
-        if (seenArticleId != null && seenArticleId != id) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-        }
-        seenArticleId = id
-    }
-
-    // Overscroll-down at bottom of article → go to next
-    val nestedScrollConnection = remember(density) {
-        val threshold = with(density) { 80.dp.toPx() }
-        object : NestedScrollConnection {
-            var accumulated = 0f
-            override fun onPostScroll(
-                consumed: Offset,
-                available: Offset,
-                source: NestedScrollSource
-            ): Offset {
-                if (available.y < 0f) {
-                    accumulated += available.y
-                    if (accumulated < -threshold) {
-                        accumulated = 0f
-                        viewModel.goToNextArticle()
-                    }
-                } else {
-                    accumulated = 0f
-                }
-                return Offset.Zero
-            }
-        }
-    }
 
     LaunchedEffect(articleId) {
         viewModel.loadArticle(articleId)
@@ -149,7 +108,6 @@ fun WebViewScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .nestedScroll(nestedScrollConnection)
         ) {
             when {
                 state.isLoading -> {
@@ -167,6 +125,10 @@ fun WebViewScreen(
                         blocks = state.contentBlocks,
                         titleFontSize = state.titleFontSize,
                         bodyFontSize = state.bodyFontSize,
+                        onNext = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.goToNextArticle()
+                        },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -181,6 +143,7 @@ private fun ArticleContent(
     blocks: List<ContentBlock>,
     titleFontSize: Float,
     bodyFontSize: Float,
+    onNext: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val linkColor = MaterialTheme.colorScheme.primary
@@ -217,7 +180,18 @@ private fun ArticleContent(
                 is ContentBlock.Quote -> QuoteItem(block, bodyFontSize.sp)
             }
         }
-        item { Spacer(Modifier.height(64.dp)) }
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Button(onClick = onNext) {
+                    Text("Next article")
+                }
+            }
+        }
     }
 }
 
