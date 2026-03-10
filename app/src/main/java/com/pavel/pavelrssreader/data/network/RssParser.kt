@@ -50,12 +50,12 @@ class RssParser {
                         title = ""; link = ""; description = ""; contentEncoded = ""
                         guid = ""; pubDate = ""; imageUrl = ""
                     }
-                    "title" -> if (!inItem) feedTitle = parser.nextText() else title = parser.nextText()
-                    "link" -> link = parser.nextText()
-                    "description" -> description = parser.nextText()
-                    "content:encoded" -> contentEncoded = parser.nextText()
-                    "guid" -> guid = parser.nextText()
-                    "pubDate" -> pubDate = parser.nextText()
+                    "title" -> if (!inItem) feedTitle = parser.nextText().trim() else title = parser.nextText().trim()
+                    "link" -> link = parser.nextText().trim()
+                    "description" -> description = parser.nextText().trim()
+                    "content:encoded" -> contentEncoded = parser.nextText().trim()
+                    "guid" -> guid = parser.nextText().trim()
+                    "pubDate" -> pubDate = parser.nextText().trim()
                     // Image tags — first non-blank value wins
                     "media:thumbnail" -> {
                         if (inItem && imageUrl.isBlank())
@@ -115,7 +115,7 @@ class RssParser {
                         inEntry = true
                         title = ""; link = ""; summary = ""; id = ""; updated = ""; imageUrl = ""
                     }
-                    "title" -> if (!inEntry) feedTitle = parser.nextText() else title = parser.nextText()
+                    "title" -> if (!inEntry) feedTitle = parser.nextText().trim() else title = parser.nextText().trim()
                     "link" -> {
                         val rel = parser.getAttributeValue(null, "rel") ?: "alternate"
                         val type = parser.getAttributeValue(null, "type") ?: ""
@@ -126,9 +126,9 @@ class RssParser {
                             else -> if (link.isBlank()) link = href
                         }
                     }
-                    "summary", "content" -> summary = parser.nextText()
-                    "id" -> id = parser.nextText()
-                    "updated" -> updated = parser.nextText()
+                    "summary", "content" -> summary = parser.nextText().trim()
+                    "id" -> id = parser.nextText().trim()
+                    "updated" -> updated = parser.nextText().trim()
                     "media:thumbnail" -> {
                         if (inEntry && imageUrl.isBlank())
                             imageUrl = parser.getAttributeValue(null, "url") ?: ""
@@ -165,9 +165,9 @@ class RssParser {
         return ParsedFeed(feedTitle, articles)
     }
 
-    /** Extracts the src of the first <img> tag from an HTML string, or empty string if none. */
+    /** Extracts the image URL from the first <img> in an HTML string (src, data-src, or data-lazy-src). */
     private fun extractFirstImageUrl(html: String): String =
-        Regex("""<img[^>]+src\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE)
+        Regex("""<img[^>]+(?:data-lazy-src|data-src|src)\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE)
             .find(html)?.groupValues?.get(1) ?: ""
 
     private fun parseRfc822(date: String): Long {

@@ -29,12 +29,12 @@ object HtmlToBlocks {
             }
             "figure" -> {
                 val img = element.selectFirst("img") ?: return emptyList()
-                val src = img.attr("src").takeIf { it.isNotBlank() } ?: return emptyList()
+                val src = imgSrc(img).takeIf { it.isNotBlank() } ?: return emptyList()
                 val caption = element.selectFirst("figcaption")?.text()?.takeIf { it.isNotBlank() }
                 listOf(ContentBlock.Image(src, caption))
             }
             "img" -> {
-                val src = element.attr("src").takeIf { it.isNotBlank() } ?: return emptyList()
+                val src = imgSrc(element).takeIf { it.isNotBlank() } ?: return emptyList()
                 listOf(ContentBlock.Image(src, null))
             }
             "ul" -> element.select("> li").map { li ->
@@ -46,6 +46,13 @@ object HtmlToBlocks {
             "div", "section", "article" -> element.children().flatMap { parseElement(it) }
             else -> emptyList()
         }
+
+    /** Returns the image URL from src, data-src, or data-lazy-src — whichever is non-blank first. */
+    private fun imgSrc(img: Element): String =
+        img.attr("src").takeIf { it.isNotBlank() }
+            ?: img.attr("data-src").takeIf { it.isNotBlank() }
+            ?: img.attr("data-lazy-src").takeIf { it.isNotBlank() }
+            ?: ""
 
     private fun parseSpans(element: Element): List<TextSpan> =
         element.childNodes().flatMap { parseNode(it) }
