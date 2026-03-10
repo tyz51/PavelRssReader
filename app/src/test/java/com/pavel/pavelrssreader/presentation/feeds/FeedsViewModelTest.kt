@@ -6,10 +6,12 @@ import com.pavel.pavelrssreader.domain.model.Result
 import com.pavel.pavelrssreader.domain.usecase.AddFeedUseCase
 import com.pavel.pavelrssreader.domain.usecase.DeleteFeedUseCase
 import com.pavel.pavelrssreader.domain.usecase.GetFeedsUseCase
+import com.pavel.pavelrssreader.domain.usecase.GetUnreadCountsPerFeedUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import com.pavel.pavelrssreader.domain.model.FeedUnreadCount
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -30,12 +32,14 @@ class FeedsViewModelTest {
     private val getFeedsUseCase = mockk<GetFeedsUseCase>()
     private val addFeedUseCase = mockk<AddFeedUseCase>()
     private val deleteFeedUseCase = mockk<DeleteFeedUseCase>(relaxed = true)
+    private val getUnreadCountsPerFeedUseCase = mockk<GetUnreadCountsPerFeedUseCase>()
 
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        every { getUnreadCountsPerFeedUseCase() } returns flowOf(emptyList<FeedUnreadCount>())
     }
 
     @After
@@ -48,7 +52,7 @@ class FeedsViewModelTest {
         val feeds = listOf(Feed(id = 1L, url = "https://a.com/rss", title = "A", addedAt = 0L))
         every { getFeedsUseCase() } returns flowOf(feeds)
 
-        val vm = FeedsViewModel(getFeedsUseCase, addFeedUseCase, deleteFeedUseCase)
+        val vm = FeedsViewModel(getFeedsUseCase, addFeedUseCase, deleteFeedUseCase, getUnreadCountsPerFeedUseCase)
         advanceUntilIdle()
 
         vm.uiState.test {
@@ -64,7 +68,7 @@ class FeedsViewModelTest {
         val feed = Feed(id = 1L, url = "https://b.com/rss", title = "B", addedAt = 0L)
         coEvery { addFeedUseCase("https://b.com/rss") } returns Result.Success(feed)
 
-        val vm = FeedsViewModel(getFeedsUseCase, addFeedUseCase, deleteFeedUseCase)
+        val vm = FeedsViewModel(getFeedsUseCase, addFeedUseCase, deleteFeedUseCase, getUnreadCountsPerFeedUseCase)
         vm.addFeed("https://b.com/rss")
         advanceUntilIdle()
 
@@ -76,7 +80,7 @@ class FeedsViewModelTest {
         every { getFeedsUseCase() } returns flowOf(emptyList())
         coEvery { addFeedUseCase("bad") } returns Result.Error("Invalid URL: bad")
 
-        val vm = FeedsViewModel(getFeedsUseCase, addFeedUseCase, deleteFeedUseCase)
+        val vm = FeedsViewModel(getFeedsUseCase, addFeedUseCase, deleteFeedUseCase, getUnreadCountsPerFeedUseCase)
         vm.addFeed("bad")
         advanceUntilIdle()
 
