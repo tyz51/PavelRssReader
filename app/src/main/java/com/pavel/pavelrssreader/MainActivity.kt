@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import com.pavel.pavelrssreader.domain.model.ThemePreference
 import com.pavel.pavelrssreader.presentation.navigation.BottomNavBar
 import com.pavel.pavelrssreader.presentation.navigation.NavGraph
+import com.pavel.pavelrssreader.presentation.navigation.NavRoutes
 import com.pavel.pavelrssreader.presentation.settings.SettingsViewModel
 import com.pavel.pavelrssreader.ui.theme.PavelRssReaderTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -44,7 +45,7 @@ class MainActivity : ComponentActivity() {
                 // Hide bottom nav on webview and font size screens
                 val showBottomBar = currentRoute != null &&
                     !currentRoute.startsWith("webview/") &&
-                    currentRoute != "font_size"
+                    currentRoute != NavRoutes.FontSize.route
 
                 Scaffold(
                     bottomBar = {

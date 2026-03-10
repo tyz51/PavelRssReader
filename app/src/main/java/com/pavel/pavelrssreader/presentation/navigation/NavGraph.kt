@@ -10,6 +10,7 @@ import androidx.navigation.navArgument
 import com.pavel.pavelrssreader.presentation.articles.ArticleListScreen
 import com.pavel.pavelrssreader.presentation.favourites.FavouritesScreen
 import com.pavel.pavelrssreader.presentation.feeds.FeedsScreen
+import com.pavel.pavelrssreader.presentation.settings.FontSizeScreen
 import com.pavel.pavelrssreader.presentation.settings.SettingsScreen
 import com.pavel.pavelrssreader.presentation.webview.WebViewScreen
 
@@ -30,7 +31,12 @@ fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
             FeedsScreen()
         }
         composable(NavRoutes.Settings.route) {
-            SettingsScreen()
+            SettingsScreen(onNavigateToFontSize = {
+                navController.navigate(NavRoutes.FontSize.route)
+            })
+        }
+        composable(NavRoutes.FontSize.route) {
+            FontSizeScreen(onBack = { navController.popBackStack() })
         }
         composable(
             route = NavRoutes.WebView.route,

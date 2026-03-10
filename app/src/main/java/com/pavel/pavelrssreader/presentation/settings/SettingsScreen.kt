@@ -28,7 +28,10 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(
+    onNavigateToFontSize: () -> Unit = {},
+    viewModel: SettingsViewModel = hiltViewModel()
+) {
     val state by viewModel.uiState.collectAsState()
 
     Scaffold(
