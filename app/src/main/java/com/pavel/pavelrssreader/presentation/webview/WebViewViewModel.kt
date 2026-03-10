@@ -3,7 +3,9 @@ package com.pavel.pavelrssreader.presentation.webview
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pavel.pavelrssreader.data.network.ArticleContentFetcher
+import com.pavel.pavelrssreader.data.parser.HtmlToBlocks
 import com.pavel.pavelrssreader.domain.model.Article
+import com.pavel.pavelrssreader.domain.model.ContentBlock
 import com.pavel.pavelrssreader.domain.repository.SettingsRepository
 import com.pavel.pavelrssreader.domain.usecase.GetArticlesUseCase
 import com.pavel.pavelrssreader.domain.usecase.MarkAsReadUseCase
@@ -26,7 +28,7 @@ import javax.inject.Inject
 data class WebViewUiState(
     val article: Article? = null,
     val isLoading: Boolean = false,
-    val fullContent: String? = null,
+    val contentBlocks: List<ContentBlock> = emptyList(),
     val titleFontSize: Float = SettingsRepository.DEFAULT_TITLE_FONT_SIZE,
     val bodyFontSize: Float = SettingsRepository.DEFAULT_BODY_FONT_SIZE
 )
@@ -42,7 +44,7 @@ class WebViewViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _articleId = MutableStateFlow<Long?>(null)
-    private val _fullContent = MutableStateFlow<String?>(null)
+    private val _contentBlocks = MutableStateFlow<List<ContentBlock>>(emptyList())
 
     private val _articleFlow = _articleId
         .flatMapLatest { id ->
@@ -52,19 +54,19 @@ class WebViewViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val uiState: StateFlow<WebViewUiState> = combine(
-        combine(_articleId, _articleFlow, _fullContent) { id, article, content ->
-            Triple(id, article, content)
+        combine(_articleId, _articleFlow, _contentBlocks) { id, article, blocks ->
+            Triple(id, article, blocks)
         },
         settingsRepository.titleFontSize,
         settingsRepository.bodyFontSize
-    ) { (id, article, fullContent), titleSize, bodySize ->
+    ) { (id, article, contentBlocks), titleSize, bodySize ->
         when {
             id == null -> WebViewUiState(titleFontSize = titleSize, bodyFontSize = bodySize)
             article == null -> WebViewUiState(isLoading = true, titleFontSize = titleSize, bodyFontSize = bodySize)
             else -> WebViewUiState(
                 article = article,
                 isLoading = false,
-                fullContent = fullContent,
+                contentBlocks = contentBlocks,
                 titleFontSize = titleSize,
                 bodyFontSize = bodySize
             )
@@ -74,19 +76,20 @@ class WebViewViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             _articleFlow
-                .mapNotNull { it?.link }
-                .distinctUntilChanged()
-                .collect { url ->
-                    _fullContent.value = null
-                    val fetched = articleContentFetcher.fetch(url)
-                    _fullContent.value = fetched.ifBlank { null }
+                .mapNotNull { it }
+                .distinctUntilChanged { old, new -> old.link == new.link }
+                .collect { article ->
+                    _contentBlocks.value = emptyList()
+                    val fetched = articleContentFetcher.fetch(article.link)
+                    val html = fetched.ifBlank { article.description ?: "" }
+                    _contentBlocks.value = HtmlToBlocks.parse(html)
                 }
         }
     }
 
     fun loadArticle(articleId: Long) {
         if (_articleId.value != articleId) {
-            _fullContent.value = null
+            _contentBlocks.value = emptyList()
             _articleId.value = articleId
             viewModelScope.launch { markAsReadUseCase(articleId) }
         }

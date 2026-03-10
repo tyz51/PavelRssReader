@@ -118,15 +118,37 @@ fun WebViewScreen(
                         },
                         update = { webView ->
                             val article = state.article ?: return@AndroidView
-                            val contentTag = "${article.id}:${state.fullContent != null}" +
+                            val contentTag = "${article.id}:${state.contentBlocks.isNotEmpty()}" +
                                     ":${state.titleFontSize.toInt()}:${state.bodyFontSize.toInt()}:$isDark"
                             if (webView.tag == contentTag) return@AndroidView
                             webView.tag = contentTag
 
-                            val content = state.fullContent ?: (article.description ?: "")
+                            val content = if (state.contentBlocks.isNotEmpty()) {
+                                state.contentBlocks.joinToString("") { block ->
+                                    when (block) {
+                                        is com.pavel.pavelrssreader.domain.model.ContentBlock.Heading ->
+                                            "<h${block.level}>${block.text}</h${block.level}>"
+                                        is com.pavel.pavelrssreader.domain.model.ContentBlock.Paragraph ->
+                                            "<p>${block.spans.joinToString("") { span ->
+                                                when (span) {
+                                                    is com.pavel.pavelrssreader.domain.model.TextSpan.Plain -> span.text
+                                                    is com.pavel.pavelrssreader.domain.model.TextSpan.Bold -> "<b>${span.text}</b>"
+                                                    is com.pavel.pavelrssreader.domain.model.TextSpan.Italic -> "<i>${span.text}</i>"
+                                                    is com.pavel.pavelrssreader.domain.model.TextSpan.Link -> """<a href="${span.url}">${span.text}</a>"""
+                                                }
+                                            }}</p>"
+                                        is com.pavel.pavelrssreader.domain.model.ContentBlock.Image ->
+                                            """<img src="${block.url}">${if (block.caption != null) "<figcaption>${block.caption}</figcaption>" else ""}"""
+                                        is com.pavel.pavelrssreader.domain.model.ContentBlock.Quote ->
+                                            "<blockquote>${block.text}</blockquote>"
+                                    }
+                                }
+                            } else {
+                                article.description ?: ""
+                            }
                             val host = Uri.parse(article.link).host ?: article.link
                             // Show RSS thumbnail during preview; full content has inline images
-                            val previewImg = if (state.fullContent == null && article.imageUrl != null)
+                            val previewImg = if (state.contentBlocks.isEmpty() && article.imageUrl != null)
                                 """<img src="${article.imageUrl}">""" else ""
 
                             // CSS px ≈ dp in WebView with the viewport meta tag
