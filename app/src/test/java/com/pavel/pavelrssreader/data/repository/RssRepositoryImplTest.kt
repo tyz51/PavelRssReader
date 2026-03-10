@@ -38,7 +38,7 @@ class RssRepositoryImplTest {
         val result = repo.refreshFeed(feed)
 
         assertTrue(result is Result.Success)
-        coVerify { articleDao.insertArticles(listOf(parsedArticle)) }
+        coVerify { articleDao.insertArticles(listOf(parsedArticle.copy(sourceName = "Feed"))) }
         coVerify { articleDao.deleteExpiredArticles(any()) }
     }
 
