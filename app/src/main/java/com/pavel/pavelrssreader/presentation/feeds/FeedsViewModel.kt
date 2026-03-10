@@ -7,6 +7,7 @@ import com.pavel.pavelrssreader.domain.model.Result
 import com.pavel.pavelrssreader.domain.usecase.AddFeedUseCase
 import com.pavel.pavelrssreader.domain.usecase.DeleteFeedUseCase
 import com.pavel.pavelrssreader.domain.usecase.GetFeedsUseCase
+import com.pavel.pavelrssreader.domain.usecase.GetUnreadCountsPerFeedUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -22,6 +24,7 @@ import javax.inject.Inject
 
 data class FeedsUiState(
     val feeds: List<Feed> = emptyList(),
+    val unreadCounts: Map<Long, Int> = emptyMap(),
     val isLoading: Boolean = false,
     val addFeedError: String? = null
 )
@@ -30,7 +33,8 @@ data class FeedsUiState(
 class FeedsViewModel @Inject constructor(
     private val getFeedsUseCase: GetFeedsUseCase,
     private val addFeedUseCase: AddFeedUseCase,
-    private val deleteFeedUseCase: DeleteFeedUseCase
+    private val deleteFeedUseCase: DeleteFeedUseCase,
+    private val getUnreadCountsPerFeedUseCase: GetUnreadCountsPerFeedUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FeedsUiState())
@@ -40,9 +44,14 @@ class FeedsViewModel @Inject constructor(
     val feedAddedEvent: SharedFlow<Unit> = _feedAddedEvent.asSharedFlow()
 
     init {
-        getFeedsUseCase()
-            .onEach { feeds -> _uiState.update { it.copy(feeds = feeds) } }
-            .launchIn(viewModelScope)
+        combine(
+            getFeedsUseCase(),
+            getUnreadCountsPerFeedUseCase()
+        ) { feeds, counts ->
+            feeds to counts.associate { it.feedId to it.count }
+        }.onEach { (feeds, counts) ->
+            _uiState.update { it.copy(feeds = feeds, unreadCounts = counts) }
+        }.launchIn(viewModelScope)
     }
 
     fun addFeed(url: String) {
