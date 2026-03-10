@@ -6,6 +6,7 @@ import android.text.Html
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -28,15 +29,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.pavel.pavelrssreader.domain.model.ThemePreference
+import com.pavel.pavelrssreader.presentation.settings.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WebViewScreen(
     articleId: Long,
     onBack: () -> Unit,
-    viewModel: WebViewViewModel = hiltViewModel()
+    viewModel: WebViewViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val settingsState by settingsViewModel.uiState.collectAsState()
+    val isSystemDark = isSystemInDarkTheme()
+    val isDark = when (settingsState.themePreference) {
+        ThemePreference.DARK -> true
+        ThemePreference.LIGHT -> false
+        ThemePreference.SYSTEM -> isSystemDark
+    }
 
     LaunchedEffect(articleId) {
         viewModel.loadArticle(articleId)
@@ -108,7 +119,7 @@ fun WebViewScreen(
                         update = { webView ->
                             val article = state.article ?: return@AndroidView
                             val contentTag = "${article.id}:${state.fullContent != null}" +
-                                    ":${state.titleFontSize.toInt()}:${state.bodyFontSize.toInt()}"
+                                    ":${state.titleFontSize.toInt()}:${state.bodyFontSize.toInt()}:$isDark"
                             if (webView.tag == contentTag) return@AndroidView
                             webView.tag = contentTag
 
@@ -122,16 +133,25 @@ fun WebViewScreen(
                             val titlePx = state.titleFontSize.toInt()
                             val bodyPx  = state.bodyFontSize.toInt()
 
+                            val bgColor     = if (isDark) "#191C1E" else "#FFFFFF"
+                            val textColor   = if (isDark) "#E2E2E6" else "#1A1A1A"
+                            val linkColor   = if (isDark) "#9ECAFF" else "#1976D2"
+                            val captionColor = if (isDark) "#C5C6D0" else "#666666"
+
+                            webView.setBackgroundColor(
+                                android.graphics.Color.parseColor(bgColor)
+                            )
+
                             val html = buildString {
                                 append("<html><head>")
                                 append("""<meta name="viewport" content="width=device-width,initial-scale=1">""")
                                 append("<style>")
-                                append("body{margin:0;padding:24px 48px 64px;word-wrap:break-word;}")
-                                append("h1.t{font-size:${titlePx}px;font-weight:bold;margin:0 0 6px;line-height:1.3;}")
-                                append("a.s{font-size:${bodyPx - 4}px;color:#1976D2;text-decoration:none;}")
+                                append("body{margin:0;padding:24px 48px 64px;word-wrap:break-word;background:$bgColor;color:$textColor;}")
+                                append("h1.t{font-size:${titlePx}px;font-weight:bold;margin:0 0 6px;line-height:1.3;color:$textColor;}")
+                                append("a.s{font-size:${bodyPx - 4}px;color:$linkColor;text-decoration:none;}")
                                 append("p,li,td,div{font-size:${bodyPx}px;line-height:1.6;}")
                                 append("img{max-width:100%!important;height:auto!important;display:block;margin:12px 0;}")
-                                append("figure{margin:0;}figcaption{font-size:${bodyPx - 4}px;color:#666;}")
+                                append("figure{margin:0;}figcaption{font-size:${bodyPx - 4}px;color:$captionColor;}")
                                 append("</style></head><body>")
                                 append("""<h1 class="t">${Html.escapeHtml(article.title)}</h1>""")
                                 append("""<p><a class="s" href="${article.link}">$host</a></p>""")
