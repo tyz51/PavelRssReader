@@ -3,6 +3,8 @@ package com.pavel.pavelrssreader.presentation.articles
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -26,7 +28,19 @@ fun ArticleListScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Feed") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("News") },
+                actions = {
+                    IconButton(onClick = { /* search placeholder */ }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Search,
+                            contentDescription = "Search"
+                        )
+                    }
+                }
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         if (state.articles.isEmpty() && !state.isRefreshing) {
@@ -51,6 +65,7 @@ fun ArticleListScreen(
                                 viewModel.toggleFavourite(article.id, isFav)
                             }
                         )
+                        HorizontalDivider()
                     }
                 }
             }
