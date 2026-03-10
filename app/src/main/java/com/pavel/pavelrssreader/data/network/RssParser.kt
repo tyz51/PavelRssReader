@@ -89,7 +89,8 @@ class RssParser {
                             description = body,
                             publishedAt = parseRfc822(pubDate),
                             fetchedAt = System.currentTimeMillis(),
-                            imageUrl = resolvedImage.ifBlank { null }
+                            imageUrl = resolvedImage.ifBlank { null },
+                            sourceName = feedTitle
                         )
                     )
                     inItem = false
@@ -152,7 +153,8 @@ class RssParser {
                             description = summary,
                             publishedAt = parseIso8601(updated),
                             fetchedAt = System.currentTimeMillis(),
-                            imageUrl = resolvedImage.ifBlank { null }
+                            imageUrl = resolvedImage.ifBlank { null },
+                            sourceName = feedTitle
                         )
                     )
                     inEntry = false

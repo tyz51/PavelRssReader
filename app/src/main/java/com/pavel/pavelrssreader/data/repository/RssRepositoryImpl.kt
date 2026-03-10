@@ -42,7 +42,8 @@ class RssRepositoryImpl @Inject constructor(
             val entity = FeedEntity(url = normalizedUrl, title = feedTitle, addedAt = System.currentTimeMillis())
             val id = feedDao.insertFeed(entity)
             val feed = Feed(id = id, url = url, title = feedTitle, addedAt = entity.addedAt)
-            val articles = parsed.articles.map { it.copy(feedId = id) }
+            val resolvedTitle = parsed.feedTitle.ifBlank { normalizedUrl }
+            val articles = parsed.articles.map { it.copy(feedId = id, sourceName = resolvedTitle) }
             articleDao.insertArticles(articles)
             Result.Success(feed)
         } catch (e: UnknownHostException) {
@@ -61,7 +62,9 @@ class RssRepositoryImpl @Inject constructor(
         return try {
             val rawXml = apiService.fetchFeed(feed.url)
             val parsed = parser.parse(rawXml, feed.id)
-            articleDao.insertArticles(parsed.articles)
+            val resolvedTitle = parsed.feedTitle.ifBlank { feed.title }
+            val articlesWithSource = parsed.articles.map { it.copy(sourceName = resolvedTitle) }
+            articleDao.insertArticles(articlesWithSource)
             parsed.articles.forEach { article ->
                 articleDao.updateContent(
                     feedId = article.feedId,
