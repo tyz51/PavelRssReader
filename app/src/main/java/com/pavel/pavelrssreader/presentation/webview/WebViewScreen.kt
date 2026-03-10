@@ -2,14 +2,16 @@ package com.pavel.pavelrssreader.presentation.webview
 
 import android.content.Intent
 import android.net.Uri
-import android.text.Html
-import android.webkit.WebResourceRequest
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
@@ -18,36 +20,46 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.pavel.pavelrssreader.domain.model.ThemePreference
-import com.pavel.pavelrssreader.presentation.settings.SettingsViewModel
+import coil.compose.AsyncImage
+import com.pavel.pavelrssreader.domain.model.Article
+import com.pavel.pavelrssreader.domain.model.ContentBlock
+import com.pavel.pavelrssreader.domain.model.TextSpan
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WebViewScreen(
     articleId: Long,
     onBack: () -> Unit,
-    viewModel: WebViewViewModel = hiltViewModel(),
-    settingsViewModel: SettingsViewModel = hiltViewModel()
+    viewModel: WebViewViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    val settingsState by settingsViewModel.uiState.collectAsState()
-    val isSystemDark = isSystemInDarkTheme()
-    val isDark = when (settingsState.themePreference) {
-        ThemePreference.DARK -> true
-        ThemePreference.LIGHT -> false
-        ThemePreference.SYSTEM -> isSystemDark
-    }
 
     LaunchedEffect(articleId) {
         viewModel.loadArticle(articleId)
@@ -80,120 +92,162 @@ fun WebViewScreen(
         when {
             state.isLoading -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
+                    modifier = Modifier.fillMaxSize().padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
                 }
             }
             else -> {
-                key(state.article?.id) {
-                    AndroidView(
-                        factory = { ctx ->
-                            WebView(ctx).apply {
-                                with(settings) {
-                                    javaScriptEnabled = true
-                                    loadWithOverviewMode = true
-                                    useWideViewPort = true
-                                    setSupportZoom(false)
-                                    builtInZoomControls = false
-                                }
-                                webViewClient = object : WebViewClient() {
-                                    override fun shouldOverrideUrlLoading(
-                                        view: WebView,
-                                        request: WebResourceRequest
-                                    ): Boolean {
-                                        val url = request.url.toString()
-                                        if (url.startsWith("http")) {
-                                            ctx.startActivity(
-                                                Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                            )
-                                        }
-                                        return true
-                                    }
-                                }
-                            }
-                        },
-                        update = { webView ->
-                            val article = state.article ?: return@AndroidView
-                            val contentTag = "${article.id}:${state.contentBlocks.isNotEmpty()}" +
-                                    ":${state.titleFontSize.toInt()}:${state.bodyFontSize.toInt()}:$isDark"
-                            if (webView.tag == contentTag) return@AndroidView
-                            webView.tag = contentTag
-
-                            val content = if (state.contentBlocks.isNotEmpty()) {
-                                state.contentBlocks.joinToString("") { block ->
-                                    when (block) {
-                                        is com.pavel.pavelrssreader.domain.model.ContentBlock.Heading ->
-                                            "<h${block.level}>${block.text}</h${block.level}>"
-                                        is com.pavel.pavelrssreader.domain.model.ContentBlock.Paragraph ->
-                                            "<p>${block.spans.joinToString("") { span ->
-                                                when (span) {
-                                                    is com.pavel.pavelrssreader.domain.model.TextSpan.Plain -> span.text
-                                                    is com.pavel.pavelrssreader.domain.model.TextSpan.Bold -> "<b>${span.text}</b>"
-                                                    is com.pavel.pavelrssreader.domain.model.TextSpan.Italic -> "<i>${span.text}</i>"
-                                                    is com.pavel.pavelrssreader.domain.model.TextSpan.Link -> """<a href="${span.url}">${span.text}</a>"""
-                                                }
-                                            }}</p>"
-                                        is com.pavel.pavelrssreader.domain.model.ContentBlock.Image ->
-                                            """<img src="${block.url}">${if (block.caption != null) "<figcaption>${block.caption}</figcaption>" else ""}"""
-                                        is com.pavel.pavelrssreader.domain.model.ContentBlock.Quote ->
-                                            "<blockquote>${block.text}</blockquote>"
-                                    }
-                                }
-                            } else {
-                                article.description ?: ""
-                            }
-                            val host = Uri.parse(article.link).host ?: article.link
-                            // Show RSS thumbnail during preview; full content has inline images
-                            val previewImg = if (state.contentBlocks.isEmpty() && article.imageUrl != null)
-                                """<img src="${article.imageUrl}">""" else ""
-
-                            // CSS px ≈ dp in WebView with the viewport meta tag
-                            val titlePx = state.titleFontSize.toInt()
-                            val bodyPx  = state.bodyFontSize.toInt()
-
-                            val bgColor     = if (isDark) "#191C1E" else "#FFFFFF"
-                            val textColor   = if (isDark) "#E2E2E6" else "#1A1A1A"
-                            val linkColor   = if (isDark) "#9ECAFF" else "#1976D2"
-                            val captionColor = if (isDark) "#C5C6D0" else "#666666"
-
-                            webView.setBackgroundColor(
-                                android.graphics.Color.parseColor(bgColor)
-                            )
-
-                            val html = buildString {
-                                append("<html><head>")
-                                append("""<meta name="viewport" content="width=device-width,initial-scale=1">""")
-                                append("<style>")
-                                append("body{margin:0;padding:24px 48px 64px;word-wrap:break-word;background:$bgColor;color:$textColor;}")
-                                append("h1.t{font-size:${titlePx}px;font-weight:bold;margin:0 0 6px;line-height:1.3;color:$textColor;}")
-                                append("a.s{font-size:${bodyPx - 4}px;color:$linkColor;text-decoration:none;}")
-                                append("p,li,td,div{font-size:${bodyPx}px;line-height:1.6;}")
-                                append("img,video{max-width:100%!important;height:auto!important;display:block;margin:12px 0;}")
-                                append("iframe{max-width:100%!important;width:100%!important;}")
-                                append("table{max-width:100%!important;word-break:break-word;}")
-                                append("figure{margin:0;}figcaption{font-size:${bodyPx - 4}px;color:$captionColor;}")
-                                append("</style></head><body>")
-                                append("""<h1 class="t">${Html.escapeHtml(article.title)}</h1>""")
-                                append("""<p><a class="s" href="${article.link}">$host</a></p>""")
-                                append(previewImg)
-                                append(content)
-                                append("</body></html>")
-                            }
-                            webView.loadDataWithBaseURL(
-                                article.link, html, "text/html", "UTF-8", null
-                            )
-                        },
-                        onRelease = { it.destroy() },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding)
-                    )
-                }
+                val article = state.article ?: return@Scaffold
+                ArticleContent(
+                    article = article,
+                    blocks = state.contentBlocks,
+                    titleFontSize = state.titleFontSize,
+                    bodyFontSize = state.bodyFontSize,
+                    modifier = Modifier.fillMaxSize().padding(padding)
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun ArticleContent(
+    article: Article,
+    blocks: List<ContentBlock>,
+    titleFontSize: Float,
+    bodyFontSize: Float,
+    modifier: Modifier = Modifier
+) {
+    val linkColor = MaterialTheme.colorScheme.primary
+
+    LazyColumn(modifier = modifier) {
+        item {
+            Text(
+                text = article.title,
+                fontSize = titleFontSize.sp,
+                fontWeight = FontWeight.Bold,
+                lineHeight = (titleFontSize * 1.3f).sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            )
+            val host = Uri.parse(article.link).host ?: article.link
+            Text(
+                text = buildAnnotatedString {
+                    withLink(
+                        LinkAnnotation.Url(
+                            article.link,
+                            TextLinkStyles(SpanStyle(color = linkColor))
+                        )
+                    ) { append(host) }
+                },
+                fontSize = (bodyFontSize - 4).sp,
+                modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp)
+            )
+        }
+        items(blocks) { block ->
+            when (block) {
+                is ContentBlock.Heading -> HeadingItem(block)
+                is ContentBlock.Paragraph -> ParagraphItem(block, bodyFontSize.sp, linkColor)
+                is ContentBlock.Image -> ImageItem(block, (bodyFontSize - 4).sp)
+                is ContentBlock.Quote -> QuoteItem(block, bodyFontSize.sp)
+            }
+        }
+        item { Spacer(Modifier.height(64.dp)) }
+    }
+}
+
+@Composable
+private fun HeadingItem(block: ContentBlock.Heading) {
+    val style = when (block.level) {
+        2 -> MaterialTheme.typography.titleLarge
+        3, 4 -> MaterialTheme.typography.titleMedium
+        else -> MaterialTheme.typography.titleSmall
+    }
+    Text(
+        text = block.text,
+        style = style,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+    )
+}
+
+@Composable
+private fun ParagraphItem(
+    block: ContentBlock.Paragraph,
+    bodyFontSize: androidx.compose.ui.unit.TextUnit,
+    linkColor: androidx.compose.ui.graphics.Color
+) {
+    Text(
+        text = buildAnnotatedString {
+            block.spans.forEach { span ->
+                when (span) {
+                    is TextSpan.Plain -> append(span.text)
+                    is TextSpan.Bold -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(span.text) }
+                    is TextSpan.Italic -> withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(span.text) }
+                    is TextSpan.Link -> withLink(
+                        LinkAnnotation.Url(
+                            span.url,
+                            TextLinkStyles(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline))
+                        )
+                    ) { append(span.text) }
+                }
+            }
+        },
+        fontSize = bodyFontSize,
+        lineHeight = bodyFontSize * 1.6f,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+    )
+}
+
+@Composable
+private fun ImageItem(
+    block: ContentBlock.Image,
+    captionFontSize: androidx.compose.ui.unit.TextUnit
+) {
+    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+        AsyncImage(
+            model = block.url,
+            contentDescription = block.caption,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier.fillMaxWidth()
+        )
+        if (block.caption != null) {
+            Text(
+                text = block.caption,
+                fontSize = captionFontSize,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuoteItem(
+    block: ContentBlock.Quote,
+    bodyFontSize: androidx.compose.ui.unit.TextUnit
+) {
+    val borderColor = MaterialTheme.colorScheme.primary
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .drawBehind {
+                drawRect(
+                    color = borderColor,
+                    topLeft = Offset(0f, 0f),
+                    size = Size(4.dp.toPx(), size.height)
+                )
+            }
+    ) {
+        Text(
+            text = block.text,
+            fontSize = bodyFontSize,
+            fontStyle = FontStyle.Italic,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 12.dp)
+        )
     }
 }
