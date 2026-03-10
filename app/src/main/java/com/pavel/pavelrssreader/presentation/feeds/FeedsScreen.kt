@@ -90,15 +90,13 @@ fun FeedsScreen(viewModel: FeedsViewModel = hiltViewModel()) {
         ) {
             items(state.feeds, key = { it.id }) { feed ->
                 val dismissState = rememberSwipeToDismissBoxState(
-                    confirmValueChange = { it != SwipeToDismissBoxValue.StartToEnd }
-                )
-
-                LaunchedEffect(dismissState.currentValue) {
-                    if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-                        feedToDelete = feed
-                        dismissState.reset()
+                    confirmValueChange = { value ->
+                        if (value == SwipeToDismissBoxValue.EndToStart) {
+                            feedToDelete = feed
+                        }
+                        false  // always snap back; deletion is deferred to the dialog
                     }
-                }
+                )
 
                 SwipeToDismissBox(
                     state = dismissState,
