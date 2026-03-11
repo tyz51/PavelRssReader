@@ -7,6 +7,7 @@ import com.pavel.pavelrssreader.domain.model.Feed
 import com.pavel.pavelrssreader.domain.model.Result
 import com.pavel.pavelrssreader.domain.usecase.GetArticlesUseCase
 import com.pavel.pavelrssreader.domain.usecase.GetFeedsUseCase
+import com.pavel.pavelrssreader.domain.usecase.MarkAsReadUseCase
 import com.pavel.pavelrssreader.domain.usecase.RefreshFeedsUseCase
 import com.pavel.pavelrssreader.domain.usecase.ToggleFavouriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,6 +33,7 @@ data class ArticleListUiState(
 class ArticleListViewModel @Inject constructor(
     private val getArticlesUseCase: GetArticlesUseCase,
     private val getFeedsUseCase: GetFeedsUseCase,
+    private val markAsReadUseCase: MarkAsReadUseCase,
     private val refreshFeedsUseCase: RefreshFeedsUseCase,
     private val toggleFavouriteUseCase: ToggleFavouriteUseCase
 ) : ViewModel() {
@@ -40,14 +42,16 @@ class ArticleListViewModel @Inject constructor(
     val uiState: StateFlow<ArticleListUiState> = _uiState.asStateFlow()
 
     private val _selectedFeedId = MutableStateFlow<Long?>(null)
+    private val _hiddenArticleIds = MutableStateFlow<Set<Long>>(emptySet())
 
     init {
         combine(
             getArticlesUseCase(),
             getFeedsUseCase(),
-            _selectedFeedId
-        ) { articles, feeds, selectedFeedId ->
-            val unread = articles.filter { !it.isRead }
+            _selectedFeedId,
+            _hiddenArticleIds
+        ) { articles, feeds, selectedFeedId, hiddenIds ->
+            val unread = articles.filter { !it.isRead && it.id !in hiddenIds }
             val filtered = if (selectedFeedId == null) unread
                            else unread.filter { it.feedId == selectedFeedId }
             Triple(filtered, feeds, selectedFeedId)
@@ -64,6 +68,19 @@ class ArticleListViewModel @Inject constructor(
 
     fun selectFeed(feedId: Long?) {
         _selectedFeedId.value = feedId
+    }
+
+    fun dismissArticle(articleId: Long) {
+        _hiddenArticleIds.update { it + articleId }
+    }
+
+    fun undoDismiss(articleId: Long) {
+        _hiddenArticleIds.update { it - articleId }
+    }
+
+    fun confirmDismiss(articleId: Long) {
+        _hiddenArticleIds.update { it - articleId }
+        viewModelScope.launch { markAsReadUseCase(articleId) }
     }
 
     fun refresh() {
