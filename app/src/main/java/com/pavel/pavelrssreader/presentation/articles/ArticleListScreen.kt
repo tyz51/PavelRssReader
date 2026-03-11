@@ -23,6 +23,7 @@ fun ArticleListScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var filterMenuExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let {
@@ -37,7 +38,6 @@ fun ArticleListScreen(
                 title = { Text(stringResource(R.string.news_title)) },
                 actions = {
                     // Source filter dropdown
-                    var filterMenuExpanded by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { filterMenuExpanded = true }) {
                             Icon(
@@ -100,7 +100,12 @@ fun ArticleListScreen(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No articles. Add a feed and pull to refresh.")
+                Text(
+                    if (state.selectedFeedId != null)
+                        "No unread articles from this source."
+                    else
+                        "No articles. Add a feed and pull to refresh."
+                )
             }
         } else {
             PullToRefreshBox(
