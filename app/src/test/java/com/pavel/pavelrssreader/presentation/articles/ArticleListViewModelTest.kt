@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -108,6 +109,7 @@ class ArticleListViewModelTest {
             val state = awaitItem()
             assertEquals(1, state.articles.size)
             assertEquals(1L, state.articles.first().feedId)
+            assertEquals(1L, state.selectedFeedId)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -128,6 +130,7 @@ class ArticleListViewModelTest {
         vm.uiState.test {
             val state = awaitItem()
             assertEquals(2, state.articles.size)
+            assertNull(state.selectedFeedId)
             cancelAndIgnoreRemainingEvents()
         }
     }

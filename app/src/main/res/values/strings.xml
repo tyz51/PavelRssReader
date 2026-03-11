@@ -1,6 +1,10 @@
 <resources>
-    <string name="app_name">PavelRssReader</string>
+    <string name="app_name">FeedNews</string>
     <string name="favourites_title">Favorites</string>
     <string name="favourites_empty">No favourite articles yet.</string>
     <string name="news_title">News</string>
+    <string name="filter_by_source">Filter by source</string>
+    <string name="filter_all">All</string>
+    <string name="no_articles_empty">No articles. Add a feed and pull to refresh.</string>
+    <string name="no_articles_filtered">No unread articles from this source.</string>
 </resources>

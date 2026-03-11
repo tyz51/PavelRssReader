@@ -42,7 +42,7 @@ fun ArticleListScreen(
                         IconButton(onClick = { filterMenuExpanded = true }) {
                             Icon(
                                 imageVector = Icons.Default.FilterList,
-                                contentDescription = "Filter by source",
+                                contentDescription = stringResource(R.string.filter_by_source),
                                 tint = if (state.selectedFeedId != null)
                                     MaterialTheme.colorScheme.primary
                                 else
@@ -54,7 +54,7 @@ fun ArticleListScreen(
                             onDismissRequest = { filterMenuExpanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("All") },
+                                text = { Text(stringResource(R.string.filter_all)) },
                                 onClick = {
                                     viewModel.selectFeed(null)
                                     filterMenuExpanded = false
@@ -102,9 +102,9 @@ fun ArticleListScreen(
             ) {
                 Text(
                     if (state.selectedFeedId != null)
-                        "No unread articles from this source."
+                        stringResource(R.string.no_articles_filtered)
                     else
-                        "No articles. Add a feed and pull to refresh."
+                        stringResource(R.string.no_articles_empty)
                 )
             }
         } else {
