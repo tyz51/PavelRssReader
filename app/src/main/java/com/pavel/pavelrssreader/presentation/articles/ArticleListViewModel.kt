@@ -3,14 +3,17 @@ package com.pavel.pavelrssreader.presentation.articles
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pavel.pavelrssreader.domain.model.Article
+import com.pavel.pavelrssreader.domain.model.Feed
 import com.pavel.pavelrssreader.domain.model.Result
 import com.pavel.pavelrssreader.domain.usecase.GetArticlesUseCase
+import com.pavel.pavelrssreader.domain.usecase.GetFeedsUseCase
 import com.pavel.pavelrssreader.domain.usecase.RefreshFeedsUseCase
 import com.pavel.pavelrssreader.domain.usecase.ToggleFavouriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -19,6 +22,8 @@ import javax.inject.Inject
 
 data class ArticleListUiState(
     val articles: List<Article> = emptyList(),
+    val feeds: List<Feed> = emptyList(),
+    val selectedFeedId: Long? = null,
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null
 )
@@ -26,6 +31,7 @@ data class ArticleListUiState(
 @HiltViewModel
 class ArticleListViewModel @Inject constructor(
     private val getArticlesUseCase: GetArticlesUseCase,
+    private val getFeedsUseCase: GetFeedsUseCase,
     private val refreshFeedsUseCase: RefreshFeedsUseCase,
     private val toggleFavouriteUseCase: ToggleFavouriteUseCase
 ) : ViewModel() {
@@ -33,10 +39,31 @@ class ArticleListViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ArticleListUiState())
     val uiState: StateFlow<ArticleListUiState> = _uiState.asStateFlow()
 
+    private val _selectedFeedId = MutableStateFlow<Long?>(null)
+
     init {
-        getArticlesUseCase()
-            .onEach { articles -> _uiState.update { it.copy(articles = articles.filter { a -> !a.isRead }) } }
-            .launchIn(viewModelScope)
+        combine(
+            getArticlesUseCase(),
+            getFeedsUseCase(),
+            _selectedFeedId
+        ) { articles, feeds, selectedFeedId ->
+            val unread = articles.filter { !it.isRead }
+            val filtered = if (selectedFeedId == null) unread
+                           else unread.filter { it.feedId == selectedFeedId }
+            Triple(filtered, feeds, selectedFeedId)
+        }
+        .onEach { (articles, feeds, selectedFeedId) ->
+            _uiState.update { it.copy(
+                articles = articles,
+                feeds = feeds,
+                selectedFeedId = selectedFeedId
+            )}
+        }
+        .launchIn(viewModelScope)
+    }
+
+    fun selectFeed(feedId: Long?) {
+        _selectedFeedId.value = feedId
     }
 
     fun refresh() {
