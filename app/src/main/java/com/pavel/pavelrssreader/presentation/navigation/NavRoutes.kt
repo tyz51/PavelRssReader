@@ -42,12 +42,12 @@ sealed class NavRoutes(
         activeIcon = Icons.Filled.Settings
     )
     data object WebView : NavRoutes(
-        route = "webview/{articleId}",
+        route = "webview/{articleId}/{feedId}",
         label = "Article",
         icon = Icons.Outlined.Newspaper,
         activeIcon = Icons.Filled.Newspaper
     ) {
-        fun createRoute(articleId: Long) = "webview/$articleId"
+        fun createRoute(articleId: Long, feedId: Long = 0L) = "webview/$articleId/$feedId"
     }
     data object FontSize : NavRoutes(
         route = "font_size",

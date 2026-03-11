@@ -18,13 +18,13 @@ import com.pavel.pavelrssreader.presentation.webview.WebViewScreen
 fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
     NavHost(navController = navController, startDestination = NavRoutes.Articles.route, modifier = modifier) {
         composable(NavRoutes.Articles.route) {
-            ArticleListScreen(onArticleClick = { articleId ->
-                navController.navigate(NavRoutes.WebView.createRoute(articleId))
+            ArticleListScreen(onArticleClick = { articleId, feedId ->
+                navController.navigate(NavRoutes.WebView.createRoute(articleId, feedId ?: 0L))
             })
         }
         composable(NavRoutes.Favourites.route) {
             FavouritesScreen(onArticleClick = { articleId ->
-                navController.navigate(NavRoutes.WebView.createRoute(articleId))
+                navController.navigate(NavRoutes.WebView.createRoute(articleId, 0L))
             })
         }
         composable(NavRoutes.Feeds.route) {
@@ -40,10 +40,14 @@ fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
         }
         composable(
             route = NavRoutes.WebView.route,
-            arguments = listOf(navArgument("articleId") { type = NavType.LongType })
+            arguments = listOf(
+                navArgument("articleId") { type = NavType.LongType },
+                navArgument("feedId") { type = NavType.LongType }
+            )
         ) { backStackEntry ->
             val articleId = backStackEntry.arguments?.getLong("articleId") ?: 0L
-            WebViewScreen(articleId = articleId, onBack = { navController.popBackStack() })
+            val feedId = backStackEntry.arguments?.getLong("feedId") ?: 0L
+            WebViewScreen(articleId = articleId, feedId = feedId, onBack = { navController.popBackStack() })
         }
     }
 }

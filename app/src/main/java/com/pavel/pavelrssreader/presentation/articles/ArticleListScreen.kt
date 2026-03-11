@@ -18,7 +18,7 @@ import com.pavel.pavelrssreader.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticleListScreen(
-    onArticleClick: (Long) -> Unit,
+    onArticleClick: (articleId: Long, feedId: Long?) -> Unit,
     viewModel: ArticleListViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -117,7 +117,7 @@ fun ArticleListScreen(
                     items(state.articles, key = { it.id }) { article ->
                         ArticleCard(
                             article = article,
-                            onClick = { onArticleClick(article.id) },
+                            onClick = { onArticleClick(article.id, state.selectedFeedId) },
                             onToggleFavourite = { isFav ->
                                 viewModel.toggleFavourite(article.id, isFav)
                             }

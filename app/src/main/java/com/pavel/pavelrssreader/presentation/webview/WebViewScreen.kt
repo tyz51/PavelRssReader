@@ -59,6 +59,7 @@ import com.pavel.pavelrssreader.domain.model.TextSpan
 @Composable
 fun WebViewScreen(
     articleId: Long,
+    feedId: Long = 0L,
     onBack: () -> Unit,
     viewModel: WebViewViewModel = hiltViewModel()
 ) {
@@ -66,7 +67,7 @@ fun WebViewScreen(
     val haptic = LocalHapticFeedback.current
 
     LaunchedEffect(articleId) {
-        viewModel.loadArticle(articleId)
+        viewModel.loadArticle(articleId, feedId)
     }
 
     Scaffold(

@@ -46,6 +46,7 @@ class WebViewViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _articleId = MutableStateFlow<Long?>(null)
+    private val _sourceFeedId = MutableStateFlow(0L)
     private val _contentBlocks = MutableStateFlow<List<ContentBlock>>(emptyList())
 
     private val _allArticles = getArticlesUseCase()
@@ -93,7 +94,8 @@ class WebViewViewModel @Inject constructor(
         }
     }
 
-    fun loadArticle(articleId: Long) {
+    fun loadArticle(articleId: Long, feedId: Long = 0L) {
+        _sourceFeedId.value = feedId
         if (_articleId.value != articleId) {
             _contentBlocks.value = emptyList()
             _articleId.value = articleId
@@ -110,10 +112,12 @@ class WebViewViewModel @Inject constructor(
 
     fun goToNextArticle() {
         val currentId = _articleId.value ?: return
-        val articles = _allArticles.value
+        val feedId = _sourceFeedId.value
+        val articles = if (feedId == 0L) _allArticles.value
+                       else _allArticles.value.filter { it.feedId == feedId }
         val idx = articles.indexOfFirst { it.id == currentId }
         if (idx >= 0 && idx < articles.size - 1) {
-            loadArticle(articles[idx + 1].id)
+            loadArticle(articles[idx + 1].id, feedId)
         }
     }
 }
