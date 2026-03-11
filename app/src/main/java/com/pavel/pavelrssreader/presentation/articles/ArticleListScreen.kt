@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -13,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.pavel.pavelrssreader.R
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticleListScreen(
@@ -34,6 +36,54 @@ fun ArticleListScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.news_title)) },
                 actions = {
+                    // Source filter dropdown
+                    var filterMenuExpanded by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { filterMenuExpanded = true }) {
+                            Icon(
+                                imageVector = Icons.Default.FilterList,
+                                contentDescription = "Filter by source",
+                                tint = if (state.selectedFeedId != null)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    LocalContentColor.current
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = filterMenuExpanded,
+                            onDismissRequest = { filterMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("All") },
+                                onClick = {
+                                    viewModel.selectFeed(null)
+                                    filterMenuExpanded = false
+                                },
+                                leadingIcon = {
+                                    RadioButton(
+                                        selected = state.selectedFeedId == null,
+                                        onClick = null
+                                    )
+                                }
+                            )
+                            state.feeds.forEach { feed ->
+                                DropdownMenuItem(
+                                    text = { Text(feed.title) },
+                                    onClick = {
+                                        viewModel.selectFeed(feed.id)
+                                        filterMenuExpanded = false
+                                    },
+                                    leadingIcon = {
+                                        RadioButton(
+                                            selected = state.selectedFeedId == feed.id,
+                                            onClick = null
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    // Search (existing placeholder)
                     IconButton(onClick = { /* search placeholder */ }) {
                         Icon(
                             imageVector = Icons.Outlined.Search,
