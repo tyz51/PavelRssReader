@@ -7,4 +7,6 @@
     <string name="filter_all">All</string>
     <string name="no_articles_empty">No articles. Add a feed and pull to refresh.</string>
     <string name="no_articles_filtered">No unread articles from this source.</string>
+    <string name="marked_as_read">Marked as read</string>
+    <string name="undo">Undo</string>
 </resources>

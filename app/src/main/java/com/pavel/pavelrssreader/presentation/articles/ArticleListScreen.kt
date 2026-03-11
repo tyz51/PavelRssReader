@@ -1,9 +1,11 @@
 package com.pavel.pavelrssreader.presentation.articles
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
@@ -11,9 +13,13 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.pavel.pavelrssreader.R
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,6 +30,11 @@ fun ArticleListScreen(
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var filterMenuExpanded by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
+
+    val markedAsReadText = stringResource(R.string.marked_as_read)
+    val undoText = stringResource(R.string.undo)
 
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let {
@@ -115,14 +126,62 @@ fun ArticleListScreen(
             ) {
                 LazyColumn {
                     items(state.articles, key = { it.id }) { article ->
-                        ArticleCard(
-                            article = article,
-                            onClick = { onArticleClick(article.id, state.selectedFeedId) },
-                            onToggleFavourite = { isFav ->
-                                viewModel.toggleFavourite(article.id, isFav)
+                        val dismissState = rememberSwipeToDismissBoxState(
+                            confirmValueChange = { value ->
+                                if (value == SwipeToDismissBoxValue.EndToStart) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    viewModel.dismissArticle(article.id)
+                                    coroutineScope.launch {
+                                        try {
+                                            val result = snackbarHostState.showSnackbar(
+                                                message = markedAsReadText,
+                                                actionLabel = undoText,
+                                                duration = SnackbarDuration.Short
+                                            )
+                                            if (result == SnackbarResult.ActionPerformed) {
+                                                viewModel.undoDismiss(article.id)
+                                            } else {
+                                                viewModel.confirmDismiss(article.id)
+                                            }
+                                        } catch (e: kotlinx.coroutines.CancellationException) {
+                                            viewModel.confirmDismiss(article.id)
+                                            throw e
+                                        }
+                                    }
+                                    true
+                                } else false
                             }
                         )
-                        HorizontalDivider()
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            enableDismissFromStartToEnd = false,
+                            backgroundContent = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(MaterialTheme.colorScheme.primaryContainer),
+                                    contentAlignment = Alignment.CenterEnd
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DoneAll,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(end = 16.dp)
+                                    )
+                                }
+                            }
+                        ) {
+                            Column {
+                                ArticleCard(
+                                    article = article,
+                                    onClick = { onArticleClick(article.id, state.selectedFeedId) },
+                                    onToggleFavourite = { isFav ->
+                                        viewModel.toggleFavourite(article.id, isFav)
+                                    }
+                                )
+                                HorizontalDivider()
+                            }
+                        }
                     }
                 }
             }
