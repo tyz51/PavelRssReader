@@ -42,13 +42,16 @@ class ArticleListViewModelTest {
     private val sampleArticle = Article(
         id = 1L, feedId = 1L, guid = "g1", title = "Test Article",
         link = "https://example.com", description = "Desc",
-        publishedAt = System.currentTimeMillis(), fetchedAt = System.currentTimeMillis()
+        publishedAt = 1_000_000L, fetchedAt = 1_000_000L, isRead = false
     )
 
     private val sampleFeed = Feed(id = 1L, url = "https://example.com/rss", title = "Example", addedAt = 0L)
 
     @Before
-    fun setup() { Dispatchers.setMain(testDispatcher) }
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+        coEvery { refreshFeedsUseCase() } returns Result.Success(Unit)
+    }
 
     @After
     fun teardown() { Dispatchers.resetMain() }
@@ -57,7 +60,6 @@ class ArticleListViewModelTest {
     fun `articles StateFlow emits articles from use case`() = runTest {
         every { getArticlesUseCase() } returns flowOf(listOf(sampleArticle))
         every { getFeedsUseCase() } returns flowOf(listOf(sampleFeed))
-        coEvery { refreshFeedsUseCase() } returns Result.Success(Unit)
 
         val vm = ArticleListViewModel(getArticlesUseCase, getFeedsUseCase, markAsReadUseCase, refreshFeedsUseCase, toggleFavouriteUseCase)
         advanceUntilIdle()
@@ -73,7 +75,6 @@ class ArticleListViewModelTest {
     fun `refresh sets isRefreshing false after completion`() = runTest {
         every { getArticlesUseCase() } returns flowOf(emptyList())
         every { getFeedsUseCase() } returns flowOf(listOf(sampleFeed))
-        coEvery { refreshFeedsUseCase() } returns Result.Success(Unit)
 
         val vm = ArticleListViewModel(getArticlesUseCase, getFeedsUseCase, markAsReadUseCase, refreshFeedsUseCase, toggleFavouriteUseCase)
         vm.refresh()
@@ -86,7 +87,6 @@ class ArticleListViewModelTest {
     fun `toggleFavourite calls use case with correct arguments`() = runTest {
         every { getArticlesUseCase() } returns flowOf(listOf(sampleArticle))
         every { getFeedsUseCase() } returns flowOf(listOf(sampleFeed))
-        coEvery { refreshFeedsUseCase() } returns Result.Success(Unit)
 
         val vm = ArticleListViewModel(getArticlesUseCase, getFeedsUseCase, markAsReadUseCase, refreshFeedsUseCase, toggleFavouriteUseCase)
         vm.toggleFavourite(1L, true)
@@ -179,9 +179,17 @@ class ArticleListViewModelTest {
         every { getFeedsUseCase() } returns flowOf(listOf(sampleFeed))
 
         val vm = ArticleListViewModel(getArticlesUseCase, getFeedsUseCase, markAsReadUseCase, refreshFeedsUseCase, toggleFavouriteUseCase)
+        advanceUntilIdle()
+        vm.dismissArticle(sampleArticle.id)
         vm.confirmDismiss(sampleArticle.id)
         advanceUntilIdle()
 
         coVerify { markAsReadUseCase(sampleArticle.id) }
+
+        vm.uiState.test {
+            val state = awaitItem()
+            assertTrue(state.articles.none { it.id == sampleArticle.id })
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 }
