@@ -9,4 +9,6 @@
     <string name="no_articles_filtered">No unread articles from this source.</string>
     <string name="marked_as_read">Marked as read</string>
     <string name="undo">Undo</string>
+    <string name="search_hint">Search</string>
+    <string name="refresh">Refresh</string>
 </resources>

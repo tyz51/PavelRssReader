@@ -40,6 +40,9 @@ interface ArticleDao {
     @Query("UPDATE articles SET isRead = 1 WHERE id = :articleId")
     suspend fun markAsRead(articleId: Long)
 
+    @Query("UPDATE articles SET isRead = 0 WHERE id = :articleId")
+    suspend fun markAsUnread(articleId: Long)
+
     @Query("DELETE FROM articles WHERE isFavorite = 0 AND isRead = 0 AND fetchedAt < :cutoffTime")
     suspend fun deleteExpiredArticles(cutoffTime: Long)
 

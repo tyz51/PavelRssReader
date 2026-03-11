@@ -100,6 +100,10 @@ class RssRepositoryImpl @Inject constructor(
         articleDao.markAsRead(articleId)
     }
 
+    override suspend fun markAsUnread(articleId: Long) {
+        articleDao.markAsUnread(articleId)
+    }
+
     override fun getUnreadCountsPerFeed(): Flow<List<FeedUnreadCount>> =
         articleDao.getUnreadCountsPerFeed()
 

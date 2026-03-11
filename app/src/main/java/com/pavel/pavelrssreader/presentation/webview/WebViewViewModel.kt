@@ -113,8 +113,9 @@ class WebViewViewModel @Inject constructor(
     fun goToNextArticle() {
         val currentId = _articleId.value ?: return
         val feedId = _sourceFeedId.value
-        val articles = if (feedId == 0L) _allArticles.value
-                       else _allArticles.value.filter { it.feedId == feedId }
+        val articles = _allArticles.value
+            .filter { !it.isRead || it.id == currentId }
+            .let { if (feedId == 0L) it else it.filter { a -> a.feedId == feedId } }
         val idx = articles.indexOfFirst { it.id == currentId }
         if (idx >= 0 && idx < articles.size - 1) {
             loadArticle(articles[idx + 1].id, feedId)

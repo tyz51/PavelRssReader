@@ -16,5 +16,6 @@ interface RssRepository {
     suspend fun refreshAllFeeds(): Result<Unit>
     suspend fun setFavourite(articleId: Long, isFavorite: Boolean)
     suspend fun markAsRead(articleId: Long)
+    suspend fun markAsUnread(articleId: Long)
     fun getUnreadCountsPerFeed(): Flow<List<FeedUnreadCount>>
 }

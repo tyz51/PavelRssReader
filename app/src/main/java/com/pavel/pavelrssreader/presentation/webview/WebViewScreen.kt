@@ -1,6 +1,7 @@
 package com.pavel.pavelrssreader.presentation.webview
 
 import android.net.Uri
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -73,6 +74,7 @@ fun WebViewScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
+                windowInsets = WindowInsets(0),
                 title = {
                     val article = state.article
                     if (article != null) {

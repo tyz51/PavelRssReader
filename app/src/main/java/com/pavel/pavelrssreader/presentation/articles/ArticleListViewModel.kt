@@ -10,6 +10,7 @@ import com.pavel.pavelrssreader.domain.usecase.GetFeedsUseCase
 import com.pavel.pavelrssreader.domain.usecase.MarkAsReadUseCase
 import com.pavel.pavelrssreader.domain.usecase.RefreshFeedsUseCase
 import com.pavel.pavelrssreader.domain.usecase.ToggleFavouriteUseCase
+import com.pavel.pavelrssreader.domain.usecase.UnmarkAsReadUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +35,7 @@ class ArticleListViewModel @Inject constructor(
     private val getArticlesUseCase: GetArticlesUseCase,
     private val getFeedsUseCase: GetFeedsUseCase,
     private val markAsReadUseCase: MarkAsReadUseCase,
+    private val unmarkAsReadUseCase: UnmarkAsReadUseCase,
     private val refreshFeedsUseCase: RefreshFeedsUseCase,
     private val toggleFavouriteUseCase: ToggleFavouriteUseCase
 ) : ViewModel() {
@@ -72,15 +74,16 @@ class ArticleListViewModel @Inject constructor(
 
     fun dismissArticle(articleId: Long) {
         _hiddenArticleIds.update { it + articleId }
+        viewModelScope.launch { markAsReadUseCase(articleId) }
     }
 
     fun undoDismiss(articleId: Long) {
         _hiddenArticleIds.update { it - articleId }
+        viewModelScope.launch { unmarkAsReadUseCase(articleId) }
     }
 
     fun confirmDismiss(articleId: Long) {
         _hiddenArticleIds.update { it - articleId }
-        viewModelScope.launch { markAsReadUseCase(articleId) }
     }
 
     fun refresh() {
